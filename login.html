@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – Connexion</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ═══ LOGIN PAGE ═══ */
+    body { display:flex; flex-direction:column; min-height:100vh; }
+
+    .login-wrapper {
+      position:relative; z-index:1;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:8rem 2rem 4rem;
+    }
+
+    .login-container {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      max-width:900px;
+      width:100%;
+      border:1px solid rgba(0,255,200,.18);
+      border-radius:16px;
+      overflow:hidden;
+      backdrop-filter:blur(16px);
+      box-shadow:0 30px 80px rgba(0,0,0,.4), 0 0 60px rgba(0,255,200,.05);
+    }
+
+    /* LEFT PANEL */
+    .login-left {
+      background:linear-gradient(160deg,rgba(0,30,50,.85),rgba(0,10,25,.95));
+      padding:3.5rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+    }
+    .login-left::before {
+      content:'';
+      position:absolute; top:-100px; left:-100px;
+      width:400px; height:400px;
+      background:radial-gradient(circle,rgba(0,255,200,.06) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .login-brand { position:relative; z-index:1; }
+    .login-logo {
+      font-family:'Cinzel',serif; font-weight:900; font-size:1.3rem;
+      letter-spacing:.2em; color:var(--aurora-1);
+      text-shadow:0 0 20px rgba(0,255,200,.4);
+      text-decoration:none; display:block; margin-bottom:2.5rem;
+    }
+    .login-tagline {
+      font-family:'Cinzel',serif; font-size:1.8rem; font-weight:600;
+      color:var(--ice); line-height:1.2; margin-bottom:1.2rem;
+    }
+    .login-tagline span {
+      background:linear-gradient(90deg,var(--aurora-1),var(--aurora-2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .login-desc { font-size:.88rem; color:rgba(224,247,255,.55); line-height:1.8; }
+
+    .login-perks { position:relative; z-index:1; margin-top:2.5rem; }
+    .perk-item {
+      display:flex; align-items:center; gap:.8rem;
+      padding:.7rem 0; border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:.84rem; color:rgba(224,247,255,.6);
+    }
+    .perk-item:last-child { border-bottom:none; }
+    .perk-icon { font-size:1.1rem; flex-shrink:0; }
+
+    .login-quote {
+      position:relative; z-index:1;
+      margin-top:auto; padding-top:2rem;
+      font-style:italic;
+      font-size:.82rem; color:rgba(168,216,234,.4);
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+
+    /* RIGHT PANEL */
+    .login-right {
+      background:rgba(0,10,22,.9);
+      padding:3.5rem;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .login-tabs {
+      display:flex; gap:0;
+      margin-bottom:2.5rem;
+      border:1px solid rgba(0,255,200,.15);
+      border-radius:6px; overflow:hidden;
+    }
+    .login-tab {
+      flex:1; padding:.7rem; text-align:center;
+      font-family:'Cinzel',serif; font-size:.78rem; letter-spacing:.15em; text-transform:uppercase;
+      cursor:pointer; border:none; background:transparent;
+      color:rgba(168,216,234,.5);
+      transition:all .25s;
+    }
+    .login-tab.active {
+      background:rgba(0,255,200,.1);
+      color:var(--aurora-1);
+    }
+
+    .login-panel { display:none; }
+    .login-panel.active { display:block; }
+
+    .login-panel h2 {
+      font-family:'Cinzel',serif; font-size:1.4rem; color:var(--ice);
+      margin-bottom:.5rem;
+    }
+    .login-panel .sub {
+      font-size:.84rem; color:rgba(168,216,234,.45); margin-bottom:2rem; line-height:1.6;
+    }
+
+    /* Discord OAuth button */
+    .btn-discord-oauth {
+      display:flex; align-items:center; justify-content:center; gap:.8rem;
+      width:100%; padding:1rem;
+      background:linear-gradient(135deg,#5865F2,#7289da);
+      border:none; border-radius:8px; cursor:pointer;
+      font-family:'Cinzel',serif; font-size:.85rem; letter-spacing:.15em; text-transform:uppercase;
+      color:white; font-weight:600; text-decoration:none;
+      transition:transform .2s,box-shadow .3s;
+      box-shadow:0 0 30px rgba(88,101,242,.25);
+      margin-bottom:1.5rem;
+    }
+    .btn-discord-oauth:hover { transform:translateY(-2px); box-shadow:0 0 50px rgba(88,101,242,.45); }
+    .btn-discord-oauth .d-icon { font-size:1.3rem; }
+
+    .or-divider {
+      display:flex; align-items:center; gap:1rem;
+      margin:1.2rem 0;
+      font-size:.72rem; letter-spacing:.15em; text-transform:uppercase;
+      color:rgba(168,216,234,.3);
+    }
+    .or-divider::before, .or-divider::after {
+      content:''; flex:1; height:1px; background:rgba(255,255,255,.07);
+    }
+
+    .form-group input { background:rgba(0,20,40,.7); }
+    .form-forgot {
+      display:block; text-align:right; font-size:.76rem;
+      color:rgba(168,216,234,.4); text-decoration:none; margin-top:.4rem; margin-bottom:1.5rem;
+      transition:color .2s;
+    }
+    .form-forgot:hover { color:var(--aurora-1); }
+
+    .btn-login {
+      width:100%; padding:1rem;
+      background:linear-gradient(135deg,var(--aurora-1),var(--aurora-2));
+      border:none; border-radius:6px; cursor:pointer;
+      font-family:'Cinzel',serif; font-size:.85rem; letter-spacing:.15em; text-transform:uppercase;
+      color:var(--deep); font-weight:700;
+      transition:transform .2s,box-shadow .3s;
+      box-shadow:0 0 25px rgba(0,255,200,.25);
+    }
+    .btn-login:hover { transform:translateY(-2px); box-shadow:0 0 40px rgba(0,255,200,.4); }
+
+    .login-footer-note {
+      margin-top:1.5rem; text-align:center;
+      font-size:.78rem; color:rgba(168,216,234,.35); line-height:1.6;
+    }
+    .login-footer-note a { color:var(--aurora-1); text-decoration:none; }
+
+    /* ═══ MEMBER PANEL (after login) ═══ */
+    .member-panel {
+      display:none;
+      max-width:900px; width:100%;
+    }
+    .member-panel.show { display:block; }
+
+    .member-header {
+      border:1px solid rgba(0,255,200,.15);
+      border-radius:12px; padding:2rem 2.5rem;
+      background:rgba(0,15,30,.6); backdrop-filter:blur(12px);
+      display:flex; align-items:center; gap:2rem;
+      margin-bottom:2rem;
+    }
+    .member-avatar {
+      width:70px; height:70px; border-radius:50%;
+      border:2px solid var(--aurora-1);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2rem;
+      background:rgba(0,255,200,.05);
+      box-shadow:0 0 20px rgba(0,255,200,.2);
+      flex-shrink:0;
+    }
+    .member-info h2 { font-family:'Cinzel',serif; font-size:1.3rem; color:var(--ice); }
+    .member-info p { font-size:.84rem; color:rgba(168,216,234,.5); margin-top:.3rem; }
+    .member-badges { display:flex; gap:.5rem; margin-top:.6rem; flex-wrap:wrap; }
+    .member-badge {
+      font-size:.65rem; letter-spacing:.12em; text-transform:uppercase;
+      padding:.25rem .7rem; border-radius:12px;
+    }
+    .badge-wl { background:rgba(0,255,200,.1); border:1px solid rgba(0,255,200,.3); color:var(--aurora-1); }
+    .badge-police { background:rgba(77,184,255,.1); border:1px solid rgba(77,184,255,.3); color:#4db8ff; }
+    .badge-vet { background:rgba(240,165,0,.1); border:1px solid rgba(240,165,0,.3); color:#f0a500; }
+
+    .member-stats {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem;
+    }
+    .member-stat {
+      border:1px solid rgba(0,255,200,.1); border-radius:8px; padding:1.5rem;
+      background:rgba(0,15,30,.4); text-align:center;
+    }
+    .member-stat-val { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:900; color:var(--aurora-1); }
+    .member-stat-lbl { font-size:.7rem; letter-spacing:.15em; text-transform:uppercase; color:rgba(168,216,234,.45); margin-top:.3rem; }
+
+    .member-actions {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;
+    }
+    .action-card {
+      border:1px solid rgba(0,255,200,.1); border-radius:10px; padding:1.5rem;
+      background:rgba(0,15,30,.4); text-align:center;
+      transition:border-color .3s,transform .3s; cursor:pointer;
+    }
+    .action-card:hover { border-color:rgba(0,255,200,.35); transform:translateY(-3px); }
+    .action-icon { font-size:2rem; margin-bottom:.7rem; }
+    .action-title { font-family:'Cinzel',serif; font-size:.9rem; color:var(--ice); margin-bottom:.4rem; }
+    .action-desc { font-size:.78rem; color:rgba(224,247,255,.45); line-height:1.6; }
+
+    .btn-logout {
+      display:inline-flex; align-items:center; gap:.5rem; margin-left:auto;
+      font-size:.75rem; letter-spacing:.12em; text-transform:uppercase;
+      color:rgba(168,216,234,.4); background:transparent; border:none; cursor:pointer;
+      padding:.5rem; transition:color .3s;
+    }
+    .btn-logout:hover { color:#ff6b6b; }
+
+    @media (max-width:750px) {
+      .login-container { grid-template-columns:1fr; }
+      .login-left { display:none; }
+      .member-stats { grid-template-columns:repeat(2,1fr); }
+      .member-actions { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora-canvas"></canvas>
+  <div class="stars" id="stars"></div>
+  <div id="snowflakes"></div>
+
+  <nav>
+    <a class="nav-logo" href="index.html">GRAND NORD RP</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+      <li><a href="login.html" class="nav-discord active">Espace membre</a></li>
+    </ul>
+  </nav>
+
+  <div class="login-wrapper">
+
+    <!-- LOGIN / REGISTER FORMS -->
+    <div class="login-container" id="auth-container">
+      <!-- LEFT -->
+      <div class="login-left">
+        <div class="login-brand">
+          <a class="login-logo" href="index.html">GRAND NORD RP</a>
+          <h2 class="login-tagline">Ton espace<br><span>membre</span></h2>
+          <p class="login-desc">Accède à ton profil, suis ta candidature, consulte tes statistiques et gère ton personnage depuis cet espace.</p>
+        </div>
+        <div class="login-perks">
+          <div class="perk-item"><span class="perk-icon">📊</span>Suivi de ta candidature en temps réel</div>
+          <div class="perk-item"><span class="perk-icon">👤</span>Gestion de ton personnage RP</div>
+          <div class="perk-item"><span class="perk-icon">🏆</span>Statistiques et classements</div>
+          <div class="perk-item"><span class="perk-icon">🔔</span>Notifications exclusives membres</div>
+          <div class="perk-item"><span class="perk-icon">🎫</span>Accès aux tickets de support</div>
+        </div>
+        <div class="login-quote">"Le froid révèle qui tu es vraiment."</div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="login-right">
+        <div class="login-tabs">
+          <button class="login-tab active" onclick="switchTab('login')">Connexion</button>
+          <button class="login-tab" onclick="switchTab('register')">Inscription</button>
+        </div>
+
+        <!-- LOGIN PANEL -->
+        <div class="login-panel active" id="panel-login">
+          <h2>Bon retour</h2>
+          <p class="sub">Connecte-toi pour accéder à ton espace membre.</p>
+
+          <a href="#" class="btn-discord-oauth" onclick="fakeLogin(event)">
+            <span class="d-icon">🎮</span> Connexion avec Discord
+          </a>
+
+          <div class="or-divider">ou</div>
+
+          <form onsubmit="fakeLogin(event)">
+            <div class="form-group">
+              <label>Adresse e-mail</label>
+              <input type="email" placeholder="ton@email.com">
+            </div>
+            <div class="form-group">
+              <label>Mot de passe</label>
+              <input type="password" placeholder="••••••••">
+            </div>
+            <a href="#" class="form-forgot">Mot de passe oublié ?</a>
+            <button type="submit" class="btn-login">Se connecter</button>
+          </form>
+
+          <p class="login-footer-note">
+            Pas encore de compte ? <a onclick="switchTab('register')" href="#">S'inscrire</a><br>
+            Connexion réservée aux joueurs whitelistés.
+          </p>
+        </div>
+
+        <!-- REGISTER PANEL -->
+        <div class="login-panel" id="panel-register">
+          <h2>Créer un compte</h2>
+          <p class="sub">Lier ton compte Discord pour une inscription rapide.</p>
+
+          <a href="#" class="btn-discord-oauth" onclick="fakeLogin(event)">
+            <span class="d-icon">🎮</span> Créer via Discord
+          </a>
+
+          <div class="or-divider">ou manuellement</div>
+
+          <form onsubmit="fakeLogin(event)">
+            <div class="form-group">
+              <label>Pseudo Discord</label>
+              <input type="text" placeholder="TonPseudo#0000">
+            </div>
+            <div class="form-group">
+              <label>Adresse e-mail</label>
+              <input type="email" placeholder="ton@email.com">
+            </div>
+            <div class="form-group">
+              <label>Mot de passe</label>
+              <input type="password" placeholder="8 caractères minimum">
+            </div>
+            <button type="submit" class="btn-login" style="margin-top:.5rem;">Créer mon compte</button>
+          </form>
+
+          <p class="login-footer-note">
+            Déjà un compte ? <a onclick="switchTab('login')" href="#">Se connecter</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER PANEL (shown after login) -->
+    <div class="member-panel" id="member-panel">
+      <div class="member-header">
+        <div class="member-avatar">🐺</div>
+        <div class="member-info">
+          <h2>Bienvenue, Viking_Nord</h2>
+          <p>Membre depuis le 10 Janvier 2025 · Serveur : Grand Nord RP</p>
+          <div class="member-badges">
+            <span class="member-badge badge-wl">✓ Whitelisté</span>
+            <span class="member-badge badge-police">Northern Police</span>
+            <span class="member-badge badge-vet">Vétéran</span>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="logout()">↩ Déconnexion</button>
+      </div>
+
+      <div class="member-stats">
+        <div class="member-stat"><div class="member-stat-val">142</div><div class="member-stat-lbl">Heures de jeu</div></div>
+        <div class="member-stat"><div class="member-stat-val">34</div><div class="member-stat-lbl">Sessions RP</div></div>
+        <div class="member-stat"><div class="member-stat-val">8 420</div><div class="member-stat-lbl">GNC en poche</div></div>
+        <div class="member-stat"><div class="member-stat-val">Cpl.</div><div class="member-stat-lbl">Grade NPD</div></div>
+      </div>
+
+      <div class="member-actions">
+        <div class="action-card">
+          <div class="action-icon">👤</div>
+          <div class="action-title">Mon personnage</div>
+          <div class="action-desc">Consulte et modifie la fiche de ton personnage RP.</div>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">📋</div>
+          <div class="action-title">Ma candidature</div>
+          <div class="action-desc">Suis le statut de ta whitelist et les retours du staff.</div>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">🎫</div>
+          <div class="action-title">Support</div>
+          <div class="action-desc">Ouvre un ticket de support pour signaler un problème.</div>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">🏆</div>
+          <div class="action-title">Classements</div>
+          <div class="action-desc">Vois où tu te places parmi les joueurs actifs.</div>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">🔔</div>
+          <div class="action-title">Notifications</div>
+          <div class="action-desc">Aucune nouvelle notification pour le moment.</div>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">⚙️</div>
+          <div class="action-title">Paramètres</div>
+          <div class="action-desc">Modifie tes préférences et informations de compte.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-logo">GRAND NORD RP</div>
+    <ul class="footer-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 Grand Nord RP · FiveM</p>
+  </footer>
+
+  <script src="shared.js"></script>
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.login-tab').forEach((t,i) => {
+        t.classList.toggle('active', (tab==='login' && i===0)||(tab==='register' && i===1));
+      });
+      document.getElementById('panel-login').classList.toggle('active', tab==='login');
+      document.getElementById('panel-register').classList.toggle('active', tab==='register');
+    }
+
+    function fakeLogin(e) {
+      e.preventDefault();
+      document.getElementById('auth-container').style.display='none';
+      document.getElementById('member-panel').classList.add('show');
+    }
+
+    function logout() {
+      document.getElementById('auth-container').style.display='grid';
+      document.getElementById('member-panel').classList.remove('show');
+    }
+  </script>
+</body>
+</html>

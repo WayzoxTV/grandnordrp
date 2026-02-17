@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – Factions</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ═══ FACTIONS GRID ═══ */
+    .factions-grid {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:2rem;
+      margin-top:1rem;
+    }
+    .faction-card {
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+      border:1px solid var(--card-border);
+      background:var(--card-bg);
+      backdrop-filter:blur(10px);
+      transition:border-color .35s,transform .35s,box-shadow .35s;
+      cursor:pointer;
+    }
+    .faction-card:hover {
+      border-color:var(--faction-color, var(--aurora-1));
+      transform:translateY(-6px);
+      box-shadow:0 16px 50px rgba(0,0,0,.3), 0 0 30px var(--faction-glow, rgba(0,255,200,.12));
+    }
+    .faction-banner {
+      height:130px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:3.5rem;
+      position:relative;
+      overflow:hidden;
+    }
+    .faction-banner::before {
+      content:'';
+      position:absolute; inset:0;
+      background:var(--faction-gradient);
+      opacity:.35;
+    }
+    .faction-banner::after {
+      content:'';
+      position:absolute; bottom:0; left:0; right:0;
+      height:50px;
+      background:linear-gradient(to bottom,transparent,var(--card-bg-solid, #010c1f));
+    }
+    .faction-banner span { position:relative; z-index:1; filter:drop-shadow(0 0 12px rgba(255,255,255,.3)); }
+    .faction-body { padding:1.8rem 2rem 2rem; }
+    .faction-name {
+      font-family:'Cinzel',serif;
+      font-size:1.3rem; font-weight:700;
+      color:var(--faction-color, var(--aurora-1));
+      letter-spacing:.06em;
+      margin-bottom:.4rem;
+    }
+    .faction-subtitle {
+      font-size:.72rem; letter-spacing:.2em; text-transform:uppercase;
+      color:rgba(168,216,234,.5); margin-bottom:1.2rem;
+    }
+    .faction-desc { font-size:.9rem; color:rgba(224,247,255,.68); line-height:1.8; margin-bottom:1.5rem; }
+    .faction-tags { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .faction-tag {
+      font-size:.68rem; letter-spacing:.12em; text-transform:uppercase;
+      padding:.3rem .7rem; border-radius:20px;
+      border:1px solid var(--faction-color, var(--aurora-1));
+      color:var(--faction-color, var(--aurora-1));
+      background:rgba(0,255,200,.05);
+    }
+    .faction-slots {
+      display:flex; align-items:center; gap:1.5rem;
+      padding-top:1.2rem; border-top:1px solid rgba(255,255,255,.07);
+      font-size:.78rem;
+    }
+    .slot-bar {
+      flex:1; height:4px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden;
+    }
+    .slot-fill {
+      height:100%; border-radius:2px;
+      background:var(--faction-color, var(--aurora-1));
+      width:var(--fill,50%);
+      box-shadow:0 0 8px var(--faction-color, var(--aurora-1));
+    }
+    .slot-text { color:rgba(168,216,234,.6); white-space:nowrap; }
+
+    /* ═══ FACTIONS SOLO ═══ */
+    .solo-section { margin-top:5rem; }
+    .solo-section .section-line { margin:1.2rem 0 3rem; }
+    .solo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+    .solo-card {
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:8px; padding:1.5rem;
+      background:rgba(0,15,30,.5);
+      backdrop-filter:blur(6px);
+      transition:border-color .3s,transform .3s;
+    }
+    .solo-card:hover { border-color:rgba(0,255,200,.3); transform:translateY(-3px); }
+    .solo-icon { font-size:2rem; margin-bottom:.8rem; }
+    .solo-name { font-family:'Cinzel',serif; font-size:.95rem; color:var(--ice); margin-bottom:.5rem; letter-spacing:.05em; }
+    .solo-desc { font-size:.84rem; color:rgba(224,247,255,.55); line-height:1.7; }
+
+    /* ═══ CTA CANDIDATURE ═══ */
+    .factions-cta {
+      margin-top:5rem; text-align:center;
+      padding:3.5rem; border:1px solid rgba(0,255,200,.15);
+      border-radius:12px; background:rgba(0,255,200,.03);
+      position:relative; overflow:hidden;
+    }
+    .factions-cta::before {
+      content:'';
+      position:absolute; top:-50%; left:50%; transform:translateX(-50%);
+      width:400px; height:400px;
+      background:radial-gradient(circle,rgba(0,255,200,.06) 0%,transparent 70%);
+    }
+    .factions-cta p { font-size:.9rem; color:rgba(224,247,255,.6); margin-bottom:1.8rem; line-height:1.8; }
+    .factions-cta-title { font-family:'Cinzel',serif; font-size:1.8rem; color:var(--ice); margin-bottom:1rem; }
+
+    @media (max-width:900px) {
+      .factions-grid { grid-template-columns:1fr; }
+      .solo-grid { grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width:600px) {
+      .solo-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora-canvas"></canvas>
+  <div class="stars" id="stars"></div>
+  <div id="snowflakes"></div>
+
+  <nav>
+    <a class="nav-logo" href="index.html">GRAND NORD RP</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html" class="active">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+      <li><a href="login.html" class="nav-discord">Espace membre</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <p class="eyebrow">Organisations & Gangs</p>
+    <h1>Les <span>Factions</span></h1>
+    <p>Dans le Grand Nord, personne ne survit seul. Choisis ton camp, forges tes alliances, et taille ta place dans cet univers impitoyable.</p>
+    <div class="hero-divider"></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- FACTIONS PRINCIPALES -->
+    <div class="reveal">
+      <p class="section-label">Organisations officielles</p>
+      <h2 class="section-title">Factions principales</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="factions-grid">
+
+      <!-- POLICE -->
+      <div class="faction-card reveal" style="--faction-color:#4db8ff;--faction-glow:rgba(77,184,255,.15);--faction-gradient:linear-gradient(135deg,#1a4a7a,#0a2040);--card-bg-solid:#010c1f;">
+        <div class="faction-banner" style="--faction-gradient:linear-gradient(135deg,#1a4a7a,#0a2040);">
+          <span>🚔</span>
+        </div>
+        <div class="faction-body">
+          <div class="faction-name">Northern Police Dept.</div>
+          <div class="faction-subtitle">Police · Faction légale</div>
+          <p class="faction-desc">Gardiens de l'ordre dans un territoire hostile. La NPD patrouille les routes gelées, maintient la paix entre les factions et protège les citoyens du Grand Nord. Une voie de carrière exigeante, avec de vraies responsabilités.</p>
+          <div class="faction-tags">
+            <span class="faction-tag">Légale</span>
+            <span class="faction-tag">Patrouille</span>
+            <span class="faction-tag">Investigation</span>
+            <span class="faction-tag">SWAT</span>
+          </div>
+          <div class="faction-slots">
+            <span class="slot-text">Effectif</span>
+            <div class="slot-bar"><div class="slot-fill" style="--fill:65%;"></div></div>
+            <span class="slot-text">13/20</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMS -->
+      <div class="faction-card reveal reveal-delay-1" style="--faction-color:#ff4d6d;--faction-glow:rgba(255,77,109,.12);--faction-gradient:linear-gradient(135deg,#7a1a2a,#400a15);--card-bg-solid:#010c1f;">
+        <div class="faction-banner" style="--faction-gradient:linear-gradient(135deg,#7a1a2a,#400a15);">
+          <span>🏥</span>
+        </div>
+        <div class="faction-body">
+          <div class="faction-name">Arctic Medical Services</div>
+          <div class="faction-subtitle">EMS · Faction légale</div>
+          <p class="faction-desc">Dans des températures extrêmes, chaque minute compte. L'AMS répond aux appels d'urgence 24h/24, opère sous les bombes et soigne sans distinction. Le serment d'Hippocrate, même au bout du monde.</p>
+          <div class="faction-tags">
+            <span class="faction-tag">Légale</span>
+            <span class="faction-tag">Urgences</span>
+            <span class="faction-tag">Chirurgie</span>
+          </div>
+          <div class="faction-slots">
+            <span class="slot-text">Effectif</span>
+            <div class="slot-bar"><div class="slot-fill" style="--fill:40%;"></div></div>
+            <span class="slot-text">8/20</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GANG NORD -->
+      <div class="faction-card reveal reveal-delay-1" style="--faction-color:#9b59b6;--faction-glow:rgba(155,89,182,.15);--faction-gradient:linear-gradient(135deg,#3a1a5a,#1a0a30);--card-bg-solid:#010c1f;">
+        <div class="faction-banner" style="--faction-gradient:linear-gradient(135deg,#3a1a5a,#1a0a30);">
+          <span>🐺</span>
+        </div>
+        <div class="faction-body">
+          <div class="faction-name">Les Loups du Blizzard</div>
+          <div class="faction-subtitle">Gang · Faction illégale</div>
+          <p class="faction-desc">Nés dans la misère des quartiers nord, les Loups du Blizzard contrôlent les routes de trafic et le marché noir de la ville. Loyauté absolue ou mort. Il n'y a pas de milieu dans le Grand Nord.</p>
+          <div class="faction-tags">
+            <span class="faction-tag">Illégale</span>
+            <span class="faction-tag">Trafic</span>
+            <span class="faction-tag">Territoire</span>
+          </div>
+          <div class="faction-slots">
+            <span class="slot-text">Effectif</span>
+            <div class="slot-bar"><div class="slot-fill" style="--fill:80%;"></div></div>
+            <span class="slot-text">16/20</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAFIA -->
+      <div class="faction-card reveal reveal-delay-2" style="--faction-color:#f0a500;--faction-glow:rgba(240,165,0,.12);--faction-gradient:linear-gradient(135deg,#5a3a00,#2a1a00);--card-bg-solid:#010c1f;">
+        <div class="faction-banner" style="--faction-gradient:linear-gradient(135deg,#5a3a00,#2a1a00);">
+          <span>🥃</span>
+        </div>
+        <div class="faction-body">
+          <div class="faction-name">Famiglia Boreale</div>
+          <div class="faction-subtitle">Crime organisé · Faction illégale</div>
+          <p class="faction-desc">Discrétion, influence et argent. La Famiglia Boreale opère dans l'ombre : racket, blanchiment, corruption des autorités. Une organisation qui se présente comme un empire commercial. Ne cherchez pas trop à comprendre.</p>
+          <div class="faction-tags">
+            <span class="faction-tag">Illégale</span>
+            <span class="faction-tag">Crime organisé</span>
+            <span class="faction-tag">Blanchiment</span>
+          </div>
+          <div class="faction-slots">
+            <span class="slot-text">Effectif</span>
+            <div class="slot-bar"><div class="slot-fill" style="--fill:55%;"></div></div>
+            <span class="slot-text">11/20</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MÉTIERS SOLO -->
+    <div class="solo-section reveal">
+      <p class="section-label">Voies indépendantes</p>
+      <h2 class="section-title">Jouer en solo</h2>
+      <div class="section-line"></div>
+      <div class="solo-grid">
+        <div class="solo-card reveal"><div class="solo-icon">🪓</div><div class="solo-name">Bûcheron</div><div class="solo-desc">Exploite les forêts nordiques pour vendre le bois aux entreprises locales. Métier de base, mais indispensable à l'économie.</div></div>
+        <div class="solo-card reveal reveal-delay-1"><div class="solo-icon">🎣</div><div class="solo-name">Pêcheur</div><div class="solo-desc">Brisez la glace des lacs pour remonter des prises rares. Vente au marché ou en privé selon ta morale.</div></div>
+        <div class="solo-card reveal reveal-delay-2"><div class="solo-icon">⛏️</div><div class="solo-name">Mineur</div><div class="solo-desc">Descends dans les mines souterraines pour extraire des minerais précieux convoités par toutes les factions.</div></div>
+        <div class="solo-card reveal"><div class="solo-icon">🚚</div><div class="solo-name">Transporteur</div><div class="solo-desc">Convoyez des marchandises légales ou illégales à travers des routes dangereuses. Neutre, mais jamais en sécurité.</div></div>
+        <div class="solo-card reveal reveal-delay-1"><div class="solo-icon">🏪</div><div class="solo-name">Commerçant</div><div class="solo-desc">Ouvre ta boutique en ville, revends des biens et construis ton empire économique de zéro.</div></div>
+        <div class="solo-card reveal reveal-delay-2"><div class="solo-icon">🎭</div><div class="solo-name">Personnage libre</div><div class="solo-desc">Aucune affiliation. Tu construis ton histoire à ta guise, en te frayant un chemin à travers toutes les sphères.</div></div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="factions-cta reveal">
+      <div class="factions-cta-title">Tu sais où tu vas ?</div>
+      <p>Postule à la whitelist, indique ta faction de préférence dans ton dossier et commence ton aventure dans le Grand Nord.</p>
+      <a href="candidature.html" class="btn-primary">Déposer ma candidature</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-logo">GRAND NORD RP</div>
+    <ul class="footer-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 Grand Nord RP · FiveM</p>
+  </footer>
+
+  <script src="shared.js"></script>
+</body>
+</html>

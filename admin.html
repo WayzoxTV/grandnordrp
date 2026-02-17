@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body, #root { height:100%; }
+    body { background:#010810; color:#e0f7ff; font-family:'Raleway',sans-serif; overflow-x:hidden; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:rgba(0,10,22,.5); }
+    ::-webkit-scrollbar-thumb { background:rgba(0,255,200,.2); border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover { background:rgba(0,255,200,.4); }
+    input, textarea, select, button { font-family:'Raleway',sans-serif; }
+    code { font-family:monospace; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ══════════════════════════════════════════
+//  STORAGE (localStorage fallback si pas de window.storage)
+// ══════════════════════════════════════════
+const store = {
+  async get(key) {
+    try {
+      if (window.storage) return await window.storage.get(key);
+      const v = localStorage.getItem(key);
+      return v ? { value: v } : null;
+    } catch { return null; }
+  },
+  async set(key, value) {
+    try {
+      if (window.storage) return await window.storage.set(key, value);
+      localStorage.setItem(key, value);
+    } catch {}
+  }
+};
+
+// ══════════════════════════════════════════
+//  DONNÉES PAR DÉFAUT
+// ══════════════════════════════════════════
+const DEFAULT = {
+  site: {
+    serverName:"Grand Nord RP", tagline:"Plonge au cœur d'un territoire sauvage et impitoyable.",
+    description:"Un serveur FiveM dédié à une expérience de roleplay immersive et sérieuse.",
+    slots:"64", discord:"https://discord.gg/TON-LIEN", status:"open",
+    whitelistOpen:true, lore:"Il y a des terres que les cartes ignorent...",
+    quote:"Ici, le froid ne tue pas les faibles. Il révèle qui tu es vraiment.",
+  },
+  pages:[
+    {id:1,slug:"index",name:"Accueil",visible:true},{id:2,slug:"factions",name:"Factions",visible:true},
+    {id:3,slug:"economie",name:"Économie",visible:true},{id:4,slug:"candidature",name:"Candidature",visible:true},
+    {id:5,slug:"news",name:"News",visible:true},{id:6,slug:"login",name:"Espace Membre",visible:true},
+  ],
+  factions:[
+    {id:1,name:"Northern Police Dept.",type:"legal",color:"#4db8ff",icon:"🚔",description:"Gardiens de l'ordre dans un territoire hostile.",slots:20,members:13,recruiting:true},
+    {id:2,name:"Arctic Medical Services",type:"legal",color:"#ff4d6d",icon:"🏥",description:"Soins d'urgence 24h/24 sous les températures extrêmes.",slots:20,members:8,recruiting:true},
+    {id:3,name:"Les Loups du Blizzard",type:"illegal",color:"#9b59b6",icon:"🐺",description:"Contrôlent les routes de trafic et le marché noir.",slots:20,members:16,recruiting:false},
+    {id:4,name:"Famiglia Boreale",type:"illegal",color:"#f0a500",icon:"🥃",description:"Crime organisé opérant dans l'ombre.",slots:20,members:11,recruiting:true},
+  ],
+  news:[
+    {id:1,title:"Mise à jour majeure 2.0 — L'Ère du Blizzard",content:"La plus grande mise à jour depuis l'ouverture.",date:"2025-02-15",tag:"patch",pinned:true,published:true},
+    {id:2,title:"Événement spécial — La Trêve du Solstice",content:"Pendant 48h, un cessez-le-feu général est proclamé.",date:"2025-02-12",tag:"event",pinned:false,published:true},
+    {id:3,title:"Patch 1.9.4 — Corrections et équilibrage",content:"Correction du bug de collision sur la route du col nord.",date:"2025-02-08",tag:"patch",pinned:false,published:true},
+  ],
+  candidatures:[
+    {id:1,pseudo:"IceWolf_47",age:22,faction:"Loups du Blizzard",experience:"Expérimenté",date:"2025-02-16",status:"pending",motivation:"Passionné de RP criminel depuis 3 ans, je cherche un serveur sérieux.",scenario:"Mon personnage observe depuis sa voiture, reste discret et prévient ses contacts."},
+    {id:2,pseudo:"ArcticFox#2891",age:19,faction:"NPD",experience:"Intermédiaire",date:"2025-02-15",status:"pending",motivation:"Je cherche un serveur sérieux avec une vraie communauté RP.",scenario:"J'appelle discrètement la police depuis mon téléphone sans me mettre en danger."},
+    {id:3,pseudo:"Bjorn_RP",age:25,faction:"Personnage libre",experience:"Vétéran",date:"2025-02-14",status:"approved",motivation:"Fondateur d'un ancien serveur RP, je veux vivre l'expérience joueur.",scenario:"Je sors discrètement, mémorise les plaques et signale aux autorités plus tard."},
+    {id:4,pseudo:"NordStar#1204",age:17,faction:"AMS",experience:"Débutant",date:"2025-02-13",status:"rejected",motivation:"C'est mon premier serveur RP, je suis très motivé.",scenario:"J'appelle le 911 directement depuis le parking."},
+  ],
+  staff:[
+    {id:1,discordId:"123456789",pseudo:"OwnerNord#0001",role:"owner",avatar:"👑",joinDate:"2025-01-01",active:true},
+    {id:2,discordId:"987654321",pseudo:"Admin_Loup#1337",role:"admin",avatar:"⚡",joinDate:"2025-01-10",active:true},
+    {id:3,discordId:"456789123",pseudo:"Modo_Glace#4242",role:"modo",avatar:"🛡️",joinDate:"2025-01-20",active:true},
+  ],
+  changelog:[
+    {id:1,version:"2.0.0",date:"2025-02-15",entries:["+Zone nordique étendue (20km²)","+Météo dynamique (tempête, blizzard)","+Métier chasseur de primes","~Refonte système économique"]},
+    {id:2,version:"1.9.4",date:"2025-02-08",entries:["~Fix collision route col nord","~Équilibrage revenus miniers","+5 tenues hivernales","-Suppression doublons véhicules"]},
+  ],
+};
+
+const DISCORD_USERS = [
+  {id:"1",pseudo:"OwnerNord#0001",avatar:"👑",role:"owner"},
+  {id:"2",pseudo:"Admin_Loup#1337",avatar:"⚡",role:"admin"},
+  {id:"3",pseudo:"Modo_Glace#4242",avatar:"🛡️",role:"modo"},
+];
+
+const ROLES = {
+  owner:{label:"Owner",color:"#f0a500",bg:"rgba(240,165,0,.12)"},
+  admin:{label:"Admin",color:"#00ffc8",bg:"rgba(0,255,200,.1)"},
+  modo:{label:"Modérateur",color:"#4db8ff",bg:"rgba(77,184,255,.1)"},
+};
+const PERMS = {
+  owner:["all"],
+  admin:["site","pages","factions","news","changelog","staff"],
+  modo:["candidatures","news"],
+};
+const can = (role,p) => (PERMS[role]||[]).includes("all") || (PERMS[role]||[]).includes(p);
+
+// ══════════════════════════════════════════
+//  STYLES
+// ══════════════════════════════════════════
+const C = {
+  aurora1:"#00ffc8", aurora2:"#00aaff", ice:"#e0f7ff", frost:"#a8d8ea",
+  deep:"#010810", night:"#020d1a", card:"rgba(0,15,30,.65)", border:"rgba(0,255,200,.13)",
+};
+const btn = (variant) => ({
+  primary:{ padding:".55rem 1.3rem", background:"linear-gradient(135deg,#00ffc8,#00aaff)", border:"none", borderRadius:5, cursor:"pointer", fontFamily:"'Cinzel',serif", fontSize:".72rem", letterSpacing:".12em", color:"#010810", fontWeight:700, display:"inline-flex", alignItems:"center", gap:".4rem" },
+  danger:{ padding:".45rem .9rem", background:"rgba(255,107,107,.08)", border:"1px solid rgba(255,107,107,.3)", borderRadius:5, cursor:"pointer", fontSize:".78rem", color:"#ff6b6b" },
+  success:{ padding:".45rem .9rem", background:"rgba(0,255,200,.08)", border:"1px solid rgba(0,255,200,.3)", borderRadius:5, cursor:"pointer", fontSize:".78rem", color:"#00ffc8" },
+  ghost:{ padding:".45rem .9rem", background:"transparent", border:"1px solid rgba(0,255,200,.18)", borderRadius:5, cursor:"pointer", fontSize:".78rem", color:"rgba(168,216,234,.55)" },
+}[variant]);
+
+const inp = { width:"100%", background:"rgba(0,20,40,.7)", border:"1px solid rgba(0,255,200,.18)", borderRadius:6, padding:".7rem .9rem", color:C.ice, fontFamily:"'Raleway',sans-serif", fontSize:".88rem", outline:"none", boxSizing:"border-box" };
+const lbl = { display:"block", fontSize:".7rem", letterSpacing:".15em", textTransform:"uppercase", color:"rgba(168,216,234,.5)", marginBottom:".5rem" };
+const card = { border:`1px solid ${C.border}`, borderRadius:10, background:C.card, backdropFilter:"blur(12px)", padding:"1.8rem", marginBottom:"1.5rem" };
+const badge = (color, bg) => ({ fontSize:".63rem", letterSpacing:".1em", textTransform:"uppercase", padding:".2rem .6rem", borderRadius:10, border:`1px solid ${color}`, color, background:bg, display:"inline-block", whiteSpace:"nowrap" });
+
+// ══════════════════════════════════════════
+//  SHARED COMPONENTS
+// ══════════════════════════════════════════
+function Toggle({value, onChange, label}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:".8rem",padding:".75rem",background:"rgba(0,20,40,.5)",borderRadius:6,cursor:"pointer"}} onClick={()=>onChange(!value)}>
+      <div style={{width:38,height:20,borderRadius:10,background:value?"#00ffc8":"rgba(255,255,255,.1)",position:"relative",transition:"background .3s",flexShrink:0}}>
+        <div style={{position:"absolute",top:3,left:value?19:3,width:14,height:14,borderRadius:7,background:"white",transition:"left .3s",boxShadow:"0 1px 3px rgba(0,0,0,.3)"}}/>
+      </div>
+      <span style={{fontSize:".85rem",color:"rgba(224,247,255,.7)"}}>{label}</span>
+    </div>
+  );
+}
+
+function RoleBadge({role}) {
+  const r = ROLES[role]||{label:role,color:"#aaa",bg:"transparent"};
+  return <span style={badge(r.color,r.bg)}>{r.label}</span>;
+}
+
+function StatusBadge({status}) {
+  const m = {pending:["#f0a500","rgba(240,165,0,.1)","⏳ En attente"],approved:["#00ffc8","rgba(0,255,200,.1)","✓ Approuvé"],rejected:["#ff6b6b","rgba(255,107,107,.1)","✗ Refusé"],open:["#00ffc8","rgba(0,255,200,.08)","🟢 Ouvert"],closed:["#ff6b6b","rgba(255,107,107,.08)","🔴 Fermé"],maintenance:["#f0a500","rgba(240,165,0,.08)","🟡 Maintenance"]};
+  const [c,bg,lbl] = m[status]||["#aaa","transparent",status];
+  return <span style={badge(c,bg)}>{lbl}</span>;
+}
+
+function Modal({title, onClose, children, wide}) {
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)",padding:"1rem"}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:"rgba(0,12,25,.97)",border:"1px solid rgba(0,255,200,.2)",borderRadius:12,padding:"2rem",width:wide?720:560,maxWidth:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1.5rem",paddingBottom:"1rem",borderBottom:"1px solid rgba(0,255,200,.1)"}}>
+          <span style={{fontFamily:"'Cinzel',serif",fontSize:"1.05rem",color:C.ice}}>{title}</span>
+          <button onClick={onClose} style={{background:"transparent",border:"none",cursor:"pointer",color:"rgba(168,216,234,.4)",fontSize:"1.3rem",lineHeight:1,padding:".2rem"}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Toast({msg, show}) {
+  return (
+    <div style={{position:"fixed",bottom:"2rem",right:"2rem",zIndex:600,background:"rgba(0,25,15,.97)",border:"1px solid #00ffc8",borderRadius:10,padding:"1rem 1.5rem",display:"flex",alignItems:"center",gap:".8rem",boxShadow:"0 10px 40px rgba(0,255,200,.2)",opacity:show?1:0,transform:show?"translateY(0)":"translateY(16px)",transition:"all .35s",pointerEvents:"none"}}>
+      <span style={{fontSize:"1.1rem"}}>✅</span>
+      <span style={{fontSize:".85rem",color:C.ice}}>{msg}</span>
+    </div>
+  );
+}
+
+function PageHeader({label, title, action}) {
+  return (
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"2rem"}}>
+      <div>
+        <p style={{fontSize:".68rem",letterSpacing:".35em",textTransform:"uppercase",color:C.aurora1,marginBottom:".4rem"}}>{label}</p>
+        <h2 style={{fontFamily:"'Cinzel',serif",fontSize:"1.5rem",color:C.ice}}>{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function StatGrid({items}) {
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:"1rem",marginBottom:"1.5rem"}}>
+      {items.map((s,i)=>(
+        <div key={i} style={{border:"1px solid rgba(0,255,200,.1)",borderRadius:8,padding:"1.3rem",background:"rgba(0,20,40,.4)",textAlign:"center"}}>
+          <div style={{fontSize:"1.8rem",marginBottom:".3rem"}}>{s.icon}</div>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:"1.6rem",fontWeight:900,background:`linear-gradient(135deg,${s.color||"#00ffc8"},${s.color2||"#00aaff"})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{s.val}</div>
+          <div style={{fontSize:".65rem",letterSpacing:".15em",textTransform:"uppercase",color:"rgba(168,216,234,.4)",marginTop:".3rem"}}>{s.lbl}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function Dashboard({data, user}) {
+  const pending = data.candidatures.filter(c=>c.status==="pending").length;
+  return (
+    <div>
+      <div style={{marginBottom:"2rem",padding:"1.5rem 2rem",border:"1px solid rgba(0,255,200,.1)",borderRadius:10,background:"linear-gradient(135deg,rgba(0,255,200,.04),rgba(0,170,255,.02))"}}>
+        <p style={{fontSize:".7rem",letterSpacing:".3em",textTransform:"uppercase",color:C.aurora1,marginBottom:".4rem"}}>Bienvenue</p>
+        <h1 style={{fontFamily:"'Cinzel',serif",fontSize:"1.6rem",color:C.ice}}>Bonjour, {user.pseudo.split("#")[0]} {user.avatar}</h1>
+        <p style={{fontSize:".85rem",color:"rgba(168,216,234,.45)",marginTop:".4rem"}}>Panel de gestion · Grand Nord RP · FiveM</p>
+      </div>
+
+      <StatGrid items={[
+        {icon:"📋",val:data.candidatures.length,lbl:"Candidatures",color:"#00ffc8",color2:"#00aaff"},
+        {icon:"⏳",val:pending,lbl:"En attente",color:"#f0a500",color2:"#ff6b6b"},
+        {icon:"🏔️",val:data.factions.length,lbl:"Factions",color:"#9b59b6",color2:"#4db8ff"},
+        {icon:"📰",val:data.news.length,lbl:"Articles",color:"#4db8ff",color2:"#00ffc8"},
+        {icon:"👥",val:data.staff.length,lbl:"Staff",color:"#f0a500",color2:"#00ffc8"},
+        {icon:"📄",val:data.pages.filter(p=>p.visible).length,lbl:"Pages actives",color:"#00ffc8",color2:"#4db8ff"},
+      ]}/>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1.5rem"}}>
+        <div style={card}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1rem",display:"flex",alignItems:"center",gap:".5rem"}}>⏳ Candidatures récentes</div>
+          {data.candidatures.slice(0,5).map(c=>(
+            <div key={c.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".55rem 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+              <div>
+                <div style={{fontSize:".85rem",color:C.ice}}>{c.pseudo}</div>
+                <div style={{fontSize:".72rem",color:"rgba(168,216,234,.4)"}}>{c.faction}</div>
+              </div>
+              <StatusBadge status={c.status}/>
+            </div>
+          ))}
+        </div>
+
+        <div style={card}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1rem"}}>🏔️ Effectifs factions</div>
+          {data.factions.map(f=>(
+            <div key={f.id} style={{marginBottom:"1rem"}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:".3rem"}}>
+                <span style={{fontSize:".82rem",color:C.ice}}>{f.icon} {f.name}</span>
+                <span style={{fontSize:".75rem",color:f.color,fontFamily:"'Cinzel',serif"}}>{f.members}/{f.slots}</span>
+              </div>
+              <div style={{height:4,background:"rgba(255,255,255,.06)",borderRadius:2,overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${Math.round((f.members/f.slots)*100)}%`,background:f.color,borderRadius:2,transition:"width .6s"}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={card}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1rem"}}>📰 Dernières news</div>
+          {data.news.slice(0,4).map(n=>(
+            <div key={n.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".55rem 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+              <span style={{fontSize:".84rem",color:C.ice,flex:1,marginRight:"1rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</span>
+              <span style={{fontSize:".7rem",color:"rgba(168,216,234,.3)",whiteSpace:"nowrap"}}>{n.date}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={card}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1rem"}}>👥 Équipe staff</div>
+          {data.staff.map(s=>(
+            <div key={s.id} style={{display:"flex",alignItems:"center",gap:".8rem",padding:".55rem 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+              <span style={{fontSize:"1.4rem"}}>{s.avatar}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:".85rem",color:C.ice}}>{s.pseudo}</div>
+                <div style={{fontSize:".7rem",color:"rgba(168,216,234,.35)"}}>Depuis le {s.joinDate}</div>
+              </div>
+              <RoleBadge role={s.role}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  SITE SETTINGS
+// ══════════════════════════════════════════
+function SiteSettings({data, onUpdate, showToast}) {
+  const [f, setF] = useState({...data.site});
+  const s = (k,v) => setF(x=>({...x,[k]:v}));
+  const save = () => { onUpdate("site",f); showToast("Paramètres sauvegardés !"); };
+
+  return (
+    <div>
+      <PageHeader label="Configuration" title="Paramètres du site"
+        action={<button style={btn("primary")} onClick={save}>💾 Sauvegarder</button>}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1.5rem"}}>
+        <div>
+          <div style={card}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1.2rem"}}>🌐 Général</div>
+            {[["Nom du serveur","serverName","text"],["Tagline hero","tagline","text"],["Lien Discord","discord","text"],["Slots joueurs","slots","text"]].map(([label,key,type])=>(
+              <div key={key} style={{marginBottom:"1rem"}}>
+                <label style={lbl}>{label}</label>
+                <input style={inp} type={type} value={f[key]||""} onChange={e=>s(key,e.target.value)}/>
+              </div>
+            ))}
+            <div style={{marginBottom:"1rem"}}>
+              <label style={lbl}>Description</label>
+              <textarea style={{...inp,resize:"vertical",minHeight:80}} value={f.description||""} onChange={e=>s("description",e.target.value)}/>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style={card}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1.2rem"}}>🔧 Statut</div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={lbl}>État du serveur</label>
+              <select style={{...inp,appearance:"none"}} value={f.status} onChange={e=>s("status",e.target.value)}>
+                <option value="open">🟢 Ouvert</option>
+                <option value="closed">🔴 Fermé</option>
+                <option value="maintenance">🟡 Maintenance</option>
+              </select>
+            </div>
+            <Toggle value={f.whitelistOpen} onChange={v=>s("whitelistOpen",v)} label="Candidatures ouvertes"/>
+            <div style={{marginTop:"1rem",padding:".8rem",border:"1px solid rgba(0,255,200,.1)",borderRadius:6,display:"flex",alignItems:"center",gap:".8rem"}}>
+              <span style={{fontSize:"1.2rem"}}>📡</span>
+              <div><div style={{fontSize:".82rem",color:C.ice}}>Statut actuel</div><StatusBadge status={f.status}/></div>
+            </div>
+          </div>
+          <div style={card}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:".9rem",color:C.ice,marginBottom:"1.2rem"}}>📜 Lore</div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={lbl}>Texte du lore</label>
+              <textarea style={{...inp,resize:"vertical",minHeight:80}} value={f.lore||""} onChange={e=>s("lore",e.target.value)}/>
+            </div>
+            <div style={{marginBottom:"1rem"}}>
+              <label style={lbl}>Citation emblématique</label>
+              <input style={inp} value={f.quote||""} onChange={e=>s("quote",e.target.value)}/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  PAGES MANAGER
+// ══════════════════════════════════════════
+function PagesManager({data, onUpdate, showToast}) {
+  const [pages, setPages] = useState([...data.pages]);
+  const [modal, setModal] = useState(null);
+  const [np, setNp] = useState({name:"",slug:"",visible:true});
+
+  const save = (updated) => { setPages(updated); onUpdate("pages",updated); };
+
+  const toggleVis = (id) => { const u=pages.map(p=>p.id===id?{...p,visible:!p.visible}:p); save(u); showToast("Visibilité mise à jour !"); };
+  const addPage = () => {
+    if(!np.name||!np.slug) return;
+    save([...pages,{id:Date.now(),...np,editable:true}]);
+    setModal(null); setNp({name:"",slug:"",visible:true});
+    showToast("Page ajoutée !");
+  };
+  const delPage = (id) => { save(pages.filter(p=>p.id!==id)); showToast("Page supprimée !"); };
+
+  return (
+    <div>
+      <PageHeader label="Navigation" title="Gestion des pages"
+        action={<button style={btn("primary")} onClick={()=>setModal("add")}>+ Nouvelle page</button>}/>
+      <div style={card}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead>
+            <tr>{["Page","Slug (URL)","Visible","Actions"].map(h=><th key={h} style={{padding:".7rem 1rem",textAlign:"left",fontSize:".67rem",letterSpacing:".2em",textTransform:"uppercase",color:C.aurora1,borderBottom:"1px solid rgba(0,255,200,.15)",fontFamily:"'Cinzel',serif"}}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {pages.map(p=>(
+              <tr key={p.id}>
+                <td style={{padding:".8rem 1rem",fontSize:".88rem",color:C.ice,borderBottom:"1px solid rgba(255,255,255,.04)",fontFamily:"'Cinzel',serif"}}>{p.name}</td>
+                <td style={{padding:".8rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}><code style={{background:"rgba(0,255,200,.06)",padding:".2rem .5rem",borderRadius:4,fontSize:".8rem",color:C.aurora1}}>{p.slug}.html</code></td>
+                <td style={{padding:".8rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:".6rem",cursor:"pointer"}} onClick={()=>toggleVis(p.id)}>
+                    <div style={{width:32,height:17,borderRadius:9,background:p.visible?"#00ffc8":"rgba(255,255,255,.1)",position:"relative",transition:"background .3s",flexShrink:0}}>
+                      <div style={{position:"absolute",top:3,left:p.visible?16:3,width:11,height:11,borderRadius:6,background:"white",transition:"left .3s"}}/>
+                    </div>
+                    <span style={{fontSize:".8rem",color:p.visible?C.aurora1:"rgba(168,216,234,.35)"}}>{p.visible?"Visible":"Masquée"}</span>
+                  </div>
+                </td>
+                <td style={{padding:".8rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <div style={{display:"flex",gap:".4rem"}}>
+                    {p.editable&&pages.length>1&&<button style={btn("danger")} onClick={()=>delPage(p.id)}>🗑️ Supprimer</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal==="add"&&(
+        <Modal title="➕ Nouvelle page" onClose={()=>setModal(null)}>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Nom de la page</label><input style={inp} value={np.name} onChange={e=>setNp(f=>({...f,name:e.target.value}))} placeholder="Ex: Boutique"/></div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Slug (sans .html)</label><input style={inp} value={np.slug} onChange={e=>setNp(f=>({...f,slug:e.target.value.toLowerCase().replace(/\s+/g,"-")}))} placeholder="boutique"/></div>
+          <Toggle value={np.visible} onChange={v=>setNp(f=>({...f,visible:v}))} label="Visible dans la navigation"/>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end",marginTop:"1.5rem"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={addPage}>Créer la page</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  FACTIONS
+// ══════════════════════════════════════════
+function FactionsManager({data, onUpdate, showToast}) {
+  const [factions, setFactions] = useState([...data.factions]);
+  const [modal, setModal] = useState(null);
+  const [f, setF] = useState({});
+  const sv = (k,v) => setF(x=>({...x,[k]:v}));
+
+  const openEdit = (x) => { setF({...x}); setModal("edit"); };
+  const openAdd  = () => { setF({id:Date.now(),name:"",type:"legal",color:"#00ffc8",icon:"⭐",description:"",slots:20,members:0,recruiting:true}); setModal("add"); };
+
+  const save = () => {
+    const u = modal==="edit" ? factions.map(x=>x.id===f.id?f:x) : [...factions,f];
+    setFactions(u); onUpdate("factions",u); setModal(null); showToast("Faction sauvegardée !");
+  };
+  const del = (id) => { const u=factions.filter(x=>x.id!==id); setFactions(u); onUpdate("factions",u); showToast("Faction supprimée !"); };
+
+  return (
+    <div>
+      <PageHeader label="Organisations" title="Gestion des factions"
+        action={<button style={btn("primary")} onClick={openAdd}>+ Nouvelle faction</button>}/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:"1.2rem"}}>
+        {factions.map(x=>(
+          <div key={x.id} style={{...card,margin:0,borderColor:`${x.color}28`}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:".8rem"}}>
+                <span style={{fontSize:"2rem"}}>{x.icon}</span>
+                <div>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:"1rem",color:x.color,marginBottom:".3rem"}}>{x.name}</div>
+                  <span style={badge(x.type==="legal"?"#4db8ff":"#ff6b6b",x.type==="legal"?"rgba(77,184,255,.1)":"rgba(255,107,107,.1)")}>{x.type}</span>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:".4rem"}}>
+                <button style={btn("ghost")} onClick={()=>openEdit(x)}>✏️</button>
+                <button style={btn("danger")} onClick={()=>del(x.id)}>🗑️</button>
+              </div>
+            </div>
+            <p style={{fontSize:".84rem",color:"rgba(224,247,255,.55)",lineHeight:1.7,marginBottom:"1rem"}}>{x.description}</p>
+            <div style={{display:"flex",alignItems:"center",gap:"1rem"}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:".3rem",fontSize:".75rem"}}>
+                  <span style={{color:"rgba(168,216,234,.4)"}}>Membres</span>
+                  <span style={{color:x.color,fontFamily:"'Cinzel',serif"}}>{x.members}/{x.slots}</span>
+                </div>
+                <div style={{height:3,background:"rgba(255,255,255,.07)",borderRadius:2,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.round((x.members/x.slots)*100)}%`,background:x.color,borderRadius:2}}/>
+                </div>
+              </div>
+              <span style={badge(x.recruiting?"#00ffc8":"#ff6b6b",x.recruiting?"rgba(0,255,200,.07)":"rgba(255,107,107,.07)")}>{x.recruiting?"Recrutement ouvert":"Fermé"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(modal==="edit"||modal==="add")&&(
+        <Modal title={modal==="edit"?`✏️ Modifier — ${f.name}`:"➕ Nouvelle faction"} onClose={()=>setModal(null)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+            <div style={{marginBottom:"1rem"}}><label style={lbl}>Nom</label><input style={inp} value={f.name||""} onChange={e=>sv("name",e.target.value)}/></div>
+            <div style={{marginBottom:"1rem"}}><label style={lbl}>Icône emoji</label><input style={inp} value={f.icon||""} onChange={e=>sv("icon",e.target.value)}/></div>
+            <div style={{marginBottom:"1rem"}}><label style={lbl}>Type</label><select style={{...inp,appearance:"none"}} value={f.type||"legal"} onChange={e=>sv("type",e.target.value)}><option value="legal">Légale</option><option value="illegal">Illégale</option><option value="service">Service</option></select></div>
+            <div style={{marginBottom:"1rem"}}><label style={lbl}>Couleur hex</label><div style={{display:"flex",gap:".5rem"}}><input style={{...inp,flex:1}} value={f.color||""} onChange={e=>sv("color",e.target.value)}/><input type="color" value={f.color||"#00ffc8"} onChange={e=>sv("color",e.target.value)} style={{width:40,height:38,border:"1px solid rgba(0,255,200,.2)",borderRadius:5,background:"transparent",cursor:"pointer",padding:2}}/></div></div>
+          </div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Description</label><textarea style={{...inp,resize:"vertical",minHeight:70}} value={f.description||""} onChange={e=>sv("description",e.target.value)}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Slots max</label><input style={inp} type="number" value={f.slots||20} onChange={e=>sv("slots",+e.target.value)}/></div>
+            <div><label style={lbl}>Membres actuels</label><input style={inp} type="number" value={f.members||0} onChange={e=>sv("members",+e.target.value)}/></div>
+          </div>
+          <Toggle value={!!f.recruiting} onChange={v=>sv("recruiting",v)} label="Recrutement ouvert"/>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end",marginTop:"1.5rem"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={save}>💾 Sauvegarder</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  CANDIDATURES
+// ══════════════════════════════════════════
+function CandidaturesManager({data, onUpdate, showToast}) {
+  const [cands, setCands] = useState([...data.candidatures]);
+  const [filter, setFilter] = useState("all");
+  const [sel, setSel] = useState(null);
+
+  const upd = (id, status) => {
+    const u = cands.map(c=>c.id===id?{...c,status}:c);
+    setCands(u); onUpdate("candidatures",u);
+    setSel(s=>s?.id===id?{...s,status}:s);
+    showToast(status==="approved"?"✅ Candidature approuvée !":"❌ Candidature refusée !");
+  };
+
+  const filtered = filter==="all"?cands:cands.filter(c=>c.status===filter);
+  const cnt = {all:cands.length, pending:cands.filter(c=>c.status==="pending").length, approved:cands.filter(c=>c.status==="approved").length, rejected:cands.filter(c=>c.status==="rejected").length};
+
+  return (
+    <div>
+      <PageHeader label="Whitelist" title="Gestion des candidatures"/>
+      <div style={{display:"flex",gap:".5rem",marginBottom:"1.5rem",flexWrap:"wrap"}}>
+        {[["all","Toutes",cnt.all],["pending","En attente",cnt.pending],["approved","Approuvées",cnt.approved],["rejected","Refusées",cnt.rejected]].map(([k,lbl,n])=>(
+          <button key={k} onClick={()=>setFilter(k)} style={{padding:".45rem 1.1rem",borderRadius:20,border:`1px solid ${filter===k?"#00ffc8":"rgba(0,255,200,.13)"}`,background:filter===k?"rgba(0,255,200,.08)":"transparent",color:filter===k?"#00ffc8":"rgba(168,216,234,.45)",cursor:"pointer",fontSize:".78rem",letterSpacing:".08em",transition:"all .2s"}}>
+            {lbl} <span style={{marginLeft:".3rem",opacity:.7}}>{n}</span>
+          </button>
+        ))}
+      </div>
+      <div style={card}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["Pseudo","Âge","Faction","Expérience","Date","Statut","Actions"].map(h=><th key={h} style={{padding:".65rem .8rem",textAlign:"left",fontSize:".65rem",letterSpacing:".18em",textTransform:"uppercase",color:C.aurora1,borderBottom:"1px solid rgba(0,255,200,.12)",fontFamily:"'Cinzel',serif"}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={7} style={{textAlign:"center",padding:"3rem",color:"rgba(168,216,234,.3)",fontSize:".88rem"}}>Aucune candidature</td></tr>}
+            {filtered.map(c=>(
+              <tr key={c.id} style={{transition:"background .15s"}}>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontFamily:"'Cinzel',serif",fontSize:".85rem",color:C.ice}}>{c.pseudo}</td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".85rem",color:"rgba(224,247,255,.65)"}}>{c.age} ans</td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".82rem",color:"rgba(168,216,234,.6)"}}>{c.faction}</td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".78rem",color:"rgba(168,216,234,.45)"}}>{c.experience}</td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".75rem",color:"rgba(168,216,234,.3)"}}>{c.date}</td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}><StatusBadge status={c.status}/></td>
+                <td style={{padding:".75rem .8rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <div style={{display:"flex",gap:".35rem",flexWrap:"wrap"}}>
+                    <button style={btn("ghost")} onClick={()=>setSel(c)}>👁️</button>
+                    {c.status!=="approved"&&<button style={btn("success")} onClick={()=>upd(c.id,"approved")}>✓</button>}
+                    {c.status!=="rejected"&&<button style={btn("danger")} onClick={()=>upd(c.id,"rejected")}>✗</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {sel&&(
+        <Modal title={`📋 Dossier — ${sel.pseudo}`} onClose={()=>setSel(null)} wide>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem",marginBottom:"1.5rem"}}>
+            {[["Pseudo",sel.pseudo],["Âge",`${sel.age} ans`],["Faction",sel.faction],["Expérience",sel.experience],["Date",sel.date]].map(([k,v])=>(
+              <div key={k}><div style={{...lbl,marginBottom:".3rem"}}>{k}</div><div style={{fontSize:".88rem",color:C.ice}}>{v}</div></div>
+            ))}
+            <div><div style={{...lbl,marginBottom:".3rem"}}>Statut</div><StatusBadge status={sel.status}/></div>
+          </div>
+          <div style={{marginBottom:"1rem"}}><div style={{...lbl,marginBottom:".5rem"}}>Motivation</div><div style={{background:"rgba(0,20,40,.6)",padding:"1rem",borderRadius:6,fontSize:".85rem",color:"rgba(224,247,255,.7)",lineHeight:1.8}}>{sel.motivation}</div></div>
+          <div style={{marginBottom:"1.5rem"}}><div style={{...lbl,marginBottom:".5rem"}}>Scénario RP</div><div style={{background:"rgba(0,20,40,.6)",padding:"1rem",borderRadius:6,fontSize:".85rem",color:"rgba(224,247,255,.7)",lineHeight:1.8}}>{sel.scenario}</div></div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end"}}>
+            <button style={btn("ghost")} onClick={()=>setSel(null)}>Fermer</button>
+            {sel.status!=="approved"&&<button style={btn("success")} onClick={()=>upd(sel.id,"approved")}>✅ Approuver</button>}
+            {sel.status!=="rejected"&&<button style={btn("danger")} onClick={()=>upd(sel.id,"rejected")}>❌ Refuser</button>}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  NEWS
+// ══════════════════════════════════════════
+function NewsManager({data, onUpdate, showToast}) {
+  const [news, setNews] = useState([...data.news]);
+  const [modal, setModal] = useState(null);
+  const [f, setF] = useState({});
+  const sv = (k,v) => setF(x=>({...x,[k]:v}));
+  const TAG_COLORS = {patch:"#4db8ff",event:"#f0a500",faction:"#9b59b6",urgent:"#ff6b6b"};
+
+  const openEdit = (n) => { setF({...n}); setModal("edit"); };
+  const openAdd  = () => { setF({id:Date.now(),title:"",content:"",date:new Date().toISOString().split("T")[0],tag:"patch",pinned:false,published:true}); setModal("add"); };
+  const save = () => {
+    const u = modal==="edit"?news.map(n=>n.id===f.id?f:n):[f,...news];
+    setNews(u); onUpdate("news",u); setModal(null); showToast("Article sauvegardé !");
+  };
+  const del = (id) => { const u=news.filter(n=>n.id!==id); setNews(u); onUpdate("news",u); showToast("Article supprimé !"); };
+  const togglePin = (id) => { const u=news.map(n=>n.id===id?{...n,pinned:!n.pinned}:n); setNews(u); onUpdate("news",u); };
+
+  return (
+    <div>
+      <PageHeader label="Actualités" title="Gestion des news"
+        action={<button style={btn("primary")} onClick={openAdd}>+ Nouvel article</button>}/>
+      <div style={card}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["Titre","Tag","Date","Épinglé","Actions"].map(h=><th key={h} style={{padding:".65rem 1rem",textAlign:"left",fontSize:".65rem",letterSpacing:".18em",textTransform:"uppercase",color:C.aurora1,borderBottom:"1px solid rgba(0,255,200,.12)",fontFamily:"'Cinzel',serif"}}>{h}</th>)}</tr></thead>
+          <tbody>
+            {news.map(n=>(
+              <tr key={n.id}>
+                <td style={{padding:".75rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".88rem",color:C.ice,fontFamily:"'Cinzel',serif",maxWidth:300}}><div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.title}</div></td>
+                <td style={{padding:".75rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}><span style={badge(TAG_COLORS[n.tag]||"#aaa",`${TAG_COLORS[n.tag]}18`||"transparent")}>{n.tag}</span></td>
+                <td style={{padding:".75rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".78rem",color:"rgba(168,216,234,.35)"}}>{n.date}</td>
+                <td style={{padding:".75rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)",cursor:"pointer"}} onClick={()=>togglePin(n.id)}><span style={{fontSize:"1.2rem",opacity:n.pinned?1:.25,transition:"opacity .2s"}}>📌</span></td>
+                <td style={{padding:".75rem 1rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <div style={{display:"flex",gap:".4rem"}}>
+                    <button style={btn("ghost")} onClick={()=>openEdit(n)}>✏️</button>
+                    <button style={btn("danger")} onClick={()=>del(n.id)}>🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {(modal==="edit"||modal==="add")&&(
+        <Modal title={modal==="edit"?"✏️ Modifier l'article":"➕ Nouvel article"} onClose={()=>setModal(null)} wide>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Titre</label><input style={inp} value={f.title||""} onChange={e=>sv("title",e.target.value)}/></div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Contenu</label><textarea style={{...inp,resize:"vertical",minHeight:120}} value={f.content||""} onChange={e=>sv("content",e.target.value)}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Date</label><input style={inp} type="date" value={f.date||""} onChange={e=>sv("date",e.target.value)}/></div>
+            <div><label style={lbl}>Tag</label><select style={{...inp,appearance:"none"}} value={f.tag||"patch"} onChange={e=>sv("tag",e.target.value)}><option value="patch">Patch</option><option value="event">Événement</option><option value="faction">Faction</option><option value="urgent">Urgent</option></select></div>
+          </div>
+          <div style={{display:"flex",gap:"1rem",marginBottom:"1rem"}}>
+            <Toggle value={!!f.pinned} onChange={v=>sv("pinned",v)} label="Épingler cet article"/>
+            <Toggle value={!!f.published} onChange={v=>sv("published",v)} label="Publié"/>
+          </div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end",marginTop:"1.5rem"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={save}>💾 Sauvegarder</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  CHANGELOG
+// ══════════════════════════════════════════
+function ChangelogManager({data, onUpdate, showToast}) {
+  const [cl, setCl] = useState([...data.changelog]);
+  const [modal, setModal] = useState(null);
+  const [f, setF] = useState({});
+  const [newE, setNewE] = useState("");
+  const clr = (e) => e.startsWith("+")?"#00ffc8":e.startsWith("-")?"#ff6b6b":e.startsWith("~")?"#f0a500":"rgba(224,247,255,.6)";
+
+  const openAdd  = () => { setF({id:Date.now(),version:"",date:new Date().toISOString().split("T")[0],entries:[]}); setModal("add"); };
+  const openEdit = (x) => { setF({...x,entries:[...x.entries]}); setModal("edit"); };
+  const addEntry = () => { if(!newE.trim()) return; setF(x=>({...x,entries:[...x.entries,newE]})); setNewE(""); };
+  const remEntry = (i) => setF(x=>({...x,entries:x.entries.filter((_,j)=>j!==i)}));
+  const save = () => {
+    const u = modal==="edit"?cl.map(x=>x.id===f.id?f:x):[f,...cl];
+    setCl(u); onUpdate("changelog",u); setModal(null); showToast("Changelog sauvegardé !");
+  };
+  const del = (id) => { const u=cl.filter(x=>x.id!==id); setCl(u); onUpdate("changelog",u); showToast("Version supprimée !"); };
+
+  return (
+    <div>
+      <PageHeader label="Technique" title="Changelog"
+        action={<button style={btn("primary")} onClick={openAdd}>+ Nouvelle version</button>}/>
+      <div style={{padding:".9rem 1.2rem",background:"rgba(0,255,200,.04)",borderRadius:8,border:"1px solid rgba(0,255,200,.1)",marginBottom:"1.5rem",fontSize:".82rem",color:"rgba(224,247,255,.55)"}}>
+        Préfixes : <span style={{color:"#00ffc8",fontWeight:700}}>+</span> Ajout &nbsp;·&nbsp; <span style={{color:"#f0a500",fontWeight:700}}>~</span> Modification &nbsp;·&nbsp; <span style={{color:"#ff6b6b",fontWeight:700}}>-</span> Suppression
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:"1.2rem"}}>
+        {cl.map(x=>(
+          <div key={x.id} style={card}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"1rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"1rem"}}>
+                <span style={{fontFamily:"'Cinzel',serif",fontSize:"1.1rem",color:C.aurora1}}>v{x.version}</span>
+                <span style={{fontSize:".75rem",color:"rgba(168,216,234,.3)"}}>{x.date}</span>
+              </div>
+              <div style={{display:"flex",gap:".5rem"}}>
+                <button style={btn("ghost")} onClick={()=>openEdit(x)}>✏️</button>
+                <button style={btn("danger")} onClick={()=>del(x.id)}>🗑️</button>
+              </div>
+            </div>
+            {x.entries.map((e,i)=>(
+              <div key={i} style={{display:"flex",gap:".6rem",fontSize:".85rem",padding:".25rem 0"}}>
+                <span style={{color:clr(e),fontWeight:700,width:14,flexShrink:0}}>{e[0]}</span>
+                <span style={{color:"rgba(224,247,255,.65)"}}>{e.slice(1)}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {(modal==="add"||modal==="edit")&&(
+        <Modal title={modal==="add"?"➕ Nouvelle version":"✏️ Modifier la version"} onClose={()=>setModal(null)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Version (ex: 2.1.0)</label><input style={inp} value={f.version||""} onChange={e=>setF(x=>({...x,version:e.target.value}))}/></div>
+            <div><label style={lbl}>Date</label><input style={inp} type="date" value={f.date||""} onChange={e=>setF(x=>({...x,date:e.target.value}))}/></div>
+          </div>
+          <div style={{marginBottom:"1rem"}}>
+            <label style={lbl}>Entrées</label>
+            <div style={{display:"flex",gap:".5rem",marginBottom:".6rem"}}>
+              <input style={{...inp,flex:1}} value={newE} onChange={e=>setNewE(e.target.value)} placeholder="+Nouvelle fonctionnalité" onKeyDown={e=>e.key==="Enter"&&(e.preventDefault(),addEntry())}/>
+              <button style={btn("primary")} onClick={addEntry}>+</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:".3rem",maxHeight:180,overflowY:"auto"}}>
+              {(f.entries||[]).map((e,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:".6rem",background:"rgba(0,20,40,.5)",padding:".45rem .8rem",borderRadius:5}}>
+                  <span style={{color:clr(e),fontWeight:700,width:14,flexShrink:0}}>{e[0]}</span>
+                  <span style={{flex:1,fontSize:".82rem",color:"rgba(224,247,255,.65)"}}>{e.slice(1)}</span>
+                  <button onClick={()=>remEntry(i)} style={{background:"transparent",border:"none",cursor:"pointer",color:"#ff6b6b",fontSize:".9rem",padding:".1rem .3rem"}}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={save}>💾 Sauvegarder</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  STAFF
+// ══════════════════════════════════════════
+function StaffManager({data, onUpdate, user, showToast}) {
+  const [staff, setStaff] = useState([...data.staff]);
+  const [modal, setModal] = useState(false);
+  const [f, setF] = useState({pseudo:"",discordId:"",role:"modo",avatar:"🛡️"});
+
+  const addMember = () => {
+    if(!f.pseudo) return;
+    const u=[...staff,{...f,id:Date.now(),joinDate:new Date().toISOString().split("T")[0],active:true}];
+    setStaff(u); onUpdate("staff",u); setModal(false);
+    setF({pseudo:"",discordId:"",role:"modo",avatar:"🛡️"});
+    showToast("Membre ajouté !");
+  };
+  const updRole = (id,role) => { const u=staff.map(s=>s.id===id?{...s,role}:s); setStaff(u); onUpdate("staff",u); showToast("Rôle mis à jour !"); };
+  const rem = (id) => {
+    if(staff.find(s=>s.id===id)?.role==="owner") { showToast("Impossible de retirer l'Owner !"); return; }
+    const u=staff.filter(s=>s.id!==id); setStaff(u); onUpdate("staff",u); showToast("Membre retiré !");
+  };
+
+  return (
+    <div>
+      <PageHeader label="Administration" title="Équipe staff"
+        action={can(user.role,"all")&&<button style={btn("primary")} onClick={()=>setModal(true)}>+ Ajouter</button>}/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:"1.2rem"}}>
+        {staff.map(s=>(
+          <div key={s.id} style={{...card,margin:0,textAlign:"center"}}>
+            <div style={{fontSize:"2.8rem",marginBottom:".8rem"}}>{s.avatar}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:"1rem",color:C.ice,marginBottom:".3rem"}}>{s.pseudo.split("#")[0]}</div>
+            <div style={{fontSize:".72rem",color:"rgba(168,216,234,.35)",marginBottom:".8rem"}}>{s.pseudo.includes("#")?`#${s.pseudo.split("#")[1]}`:""}</div>
+            <div style={{marginBottom:".7rem"}}><RoleBadge role={s.role}/></div>
+            <div style={{fontSize:".7rem",color:"rgba(168,216,234,.25)",marginBottom:"1rem"}}>Depuis le {s.joinDate}</div>
+            {can(user.role,"all")&&s.role!=="owner"&&(
+              <div style={{display:"flex",gap:".5rem",justifyContent:"center"}}>
+                <select style={{...inp,width:"auto",padding:".3rem .6rem",fontSize:".75rem",flex:1}} value={s.role} onChange={e=>updRole(s.id,e.target.value)}>
+                  <option value="admin">Admin</option>
+                  <option value="modo">Modo</option>
+                </select>
+                <button style={btn("danger")} onClick={()=>rem(s.id)}>🗑️</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {modal&&(
+        <Modal title="➕ Ajouter au staff" onClose={()=>setModal(false)}>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>Pseudo Discord</label><input style={inp} value={f.pseudo} onChange={e=>setF(x=>({...x,pseudo:e.target.value}))} placeholder="Pseudo#0000"/></div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>ID Discord</label><input style={inp} value={f.discordId} onChange={e=>setF(x=>({...x,discordId:e.target.value}))} placeholder="123456789"/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Rôle</label><select style={{...inp,appearance:"none"}} value={f.role} onChange={e=>setF(x=>({...x,role:e.target.value}))}><option value="admin">Admin</option><option value="modo">Modérateur</option></select></div>
+            <div><label style={lbl}>Avatar (emoji)</label><input style={inp} value={f.avatar} onChange={e=>setF(x=>({...x,avatar:e.target.value}))}/></div>
+          </div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(false)}>Annuler</button>
+            <button style={btn("primary")} onClick={addMember}>Ajouter</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+//  ROOT APP
+// ══════════════════════════════════════════
+function App() {
+  const [user, setUser]       = useState(null);
+  const [section, setSection] = useState("dashboard");
+  const [data, setData]       = useState(null);
+  const [toast, setToast]     = useState({show:false,msg:""});
+  const [loading, setLoading] = useState(true);
+  const [mob, setMob]         = useState(false);
+
+  useEffect(()=>{
+    store.get("gnrp-data").then(r=>{
+      try { setData(r?JSON.parse(r.value):DEFAULT); } catch { setData(DEFAULT); }
+      setLoading(false);
+    });
+  },[]);
+
+  const updData = useCallback((key,val)=>{
+    setData(prev=>{
+      const next={...prev,[key]:val};
+      store.set("gnrp-data",JSON.stringify(next));
+      return next;
+    });
+  },[]);
+
+  const showToast = useCallback((msg)=>{
+    setToast({show:true,msg});
+    setTimeout(()=>setToast({show:false,msg:""}),3000);
+  },[]);
+
+  if(loading) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.deep,flexDirection:"column",gap:"1rem"}}>
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:"1.2rem",color:C.aurora1,letterSpacing:".2em"}}>GRAND NORD RP</div>
+      <div style={{width:40,height:2,background:`linear-gradient(90deg,transparent,${C.aurora1},transparent)`,animation:"none"}}/>
+      <div style={{fontSize:".8rem",color:"rgba(168,216,234,.35)",letterSpacing:".15em"}}>Chargement...</div>
+    </div>
+  );
+
+  // ── LOGIN ──
+  if(!user) return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`radial-gradient(ellipse at 30% 30%,rgba(0,255,200,.05),transparent 60%),${C.deep}`,padding:"1rem"}}>
+      <div style={{width:420,maxWidth:"100%",border:"1px solid rgba(0,255,200,.2)",borderRadius:16,background:"rgba(0,15,30,.88)",backdropFilter:"blur(20px)",padding:"2.5rem",boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"1.2rem",letterSpacing:".2em",color:C.aurora1,textShadow:`0 0 20px rgba(0,255,200,.35)`,marginBottom:"2rem",textAlign:"center"}}>GRAND NORD RP</div>
+        <h2 style={{fontFamily:"'Cinzel',serif",fontSize:"1.4rem",textAlign:"center",marginBottom:".5rem",color:C.ice}}>Admin Panel</h2>
+        <p style={{textAlign:"center",fontSize:".84rem",color:"rgba(168,216,234,.4)",marginBottom:"2rem"}}>Connexion réservée au staff du serveur</p>
+
+        <button style={{width:"100%",padding:"1rem",background:"linear-gradient(135deg,#5865F2,#7289da)",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:".85rem",letterSpacing:".15em",color:"white",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:".8rem",marginBottom:"1.5rem",boxShadow:"0 0 30px rgba(88,101,242,.25)"}}>
+          🎮 Connexion avec Discord OAuth
+        </button>
+
+        <div style={{display:"flex",alignItems:"center",gap:"1rem",margin:"1.2rem 0",fontSize:".7rem",letterSpacing:".15em",color:"rgba(168,216,234,.25)",textTransform:"uppercase"}}>
+          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>démo<div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:".6rem"}}>
+          {DISCORD_USERS.map(u=>(
+            <button key={u.id} onClick={()=>{setUser(u);setSection("dashboard");}}
+              style={{width:"100%",padding:".85rem 1rem",background:"rgba(0,20,40,.6)",border:"1px solid rgba(0,255,200,.15)",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",gap:".8rem",transition:"all .2s",textAlign:"left"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,255,200,.4)";e.currentTarget.style.background="rgba(0,255,200,.06)";}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,255,200,.15)";e.currentTarget.style.background="rgba(0,20,40,.6)";}}>
+              <span style={{fontSize:"1.5rem"}}>{u.avatar}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:".88rem",color:C.ice,fontWeight:500}}>{u.pseudo}</div>
+                <div style={{fontSize:".72rem",color:"rgba(168,216,234,.35)",marginTop:".1rem"}}>Se connecter en tant que…</div>
+              </div>
+              <RoleBadge role={u.role}/>
+            </button>
+          ))}
+        </div>
+        <p style={{marginTop:"1.5rem",fontSize:".7rem",textAlign:"center",color:"rgba(168,216,234,.2)",lineHeight:1.7}}>En production, branchez votre Discord OAuth App.<br/>Seul le staff whitelisté aura accès.</p>
+      </div>
+    </div>
+  );
+
+  // ── NAV ──
+  const pending = data.candidatures.filter(c=>c.status==="pending").length;
+  const NAV = [
+    {section:"GÉNÉRAL", items:[
+      {id:"dashboard",icon:"📊",label:"Dashboard"},
+      ...(can(user.role,"site")?[{id:"site",icon:"🌐",label:"Paramètres site"}]:[]),
+      ...(can(user.role,"pages")?[{id:"pages",icon:"📄",label:"Pages"}]:[]),
+    ]},
+    {section:"CONTENU", items:[
+      ...(can(user.role,"factions")?[{id:"factions",icon:"🏔️",label:"Factions"}]:[]),
+      ...(can(user.role,"news")?[{id:"news",icon:"📰",label:"News"}]:[]),
+      ...(can(user.role,"changelog")?[{id:"changelog",icon:"⚙️",label:"Changelog"}]:[]),
+    ]},
+    {section:"MODÉRATION", items:[
+      ...(can(user.role,"candidatures")?[{id:"candidatures",icon:"📋",label:"Candidatures",badge:pending||null}]:[]),
+      ...(can(user.role,"staff")||can(user.role,"all")?[{id:"staff",icon:"👥",label:"Staff"}]:[]),
+    ]},
+  ].filter(g=>g.items.length>0);
+
+  const allItems = NAV.flatMap(g=>g.items);
+  const curItem  = allItems.find(i=>i.id===section)||allItems[0];
+
+  const renderContent = () => {
+    switch(section){
+      case "dashboard":    return <Dashboard data={data} user={user}/>;
+      case "site":         return <SiteSettings data={data} onUpdate={updData} showToast={showToast}/>;
+      case "pages":        return <PagesManager data={data} onUpdate={updData} showToast={showToast}/>;
+      case "factions":     return <FactionsManager data={data} onUpdate={updData} showToast={showToast}/>;
+      case "news":         return <NewsManager data={data} onUpdate={updData} showToast={showToast}/>;
+      case "changelog":    return <ChangelogManager data={data} onUpdate={updData} showToast={showToast}/>;
+      case "candidatures": return <CandidaturesManager data={data} onUpdate={updData} showToast={showToast}/>;
+      case "staff":        return <StaffManager data={data} onUpdate={updData} user={user} showToast={showToast}/>;
+      default:             return <Dashboard data={data} user={user}/>;
+    }
+  };
+
+  const Sidebar = () => (
+    <div style={{width:250,background:"rgba(0,8,20,.97)",borderRight:"1px solid rgba(0,255,200,.07)",display:"flex",flexDirection:"column",position:"fixed",top:0,bottom:0,left:mob?0:-250,zIndex:100,transition:"left .3s",overflowY:"auto"}}>
+      <div style={{padding:"1.6rem 1.4rem 1rem",borderBottom:"1px solid rgba(0,255,200,.07)"}}>
+        <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:".95rem",letterSpacing:".18em",color:C.aurora1,textShadow:"0 0 15px rgba(0,255,200,.3)"}}>GRAND NORD RP</div>
+        <div style={{fontSize:".6rem",letterSpacing:".15em",color:"rgba(168,216,234,.3)",marginTop:".3rem",textTransform:"uppercase"}}>Admin Panel</div>
+      </div>
+      <nav style={{flex:1,padding:".5rem 0"}}>
+        {NAV.map(g=>(
+          <div key={g.section}>
+            <div style={{padding:"1rem .9rem .4rem",fontSize:".58rem",letterSpacing:".25em",textTransform:"uppercase",color:"rgba(168,216,234,.25)"}}>{g.section}</div>
+            {g.items.map(item=>(
+              <div key={item.id} onClick={()=>{setSection(item.id);setMob(false);}}
+                style={{display:"flex",alignItems:"center",gap:".6rem",padding:".6rem 1rem",margin:"0 .4rem .1rem",borderRadius:6,cursor:"pointer",fontSize:".82rem",color:section===item.id?C.aurora1:"rgba(168,216,234,.55)",background:section===item.id?"rgba(0,255,200,.07)":"transparent",border:`1px solid ${section===item.id?"rgba(0,255,200,.18)":"transparent"}`,transition:"all .2s"}}
+                onMouseEnter={e=>{if(section!==item.id){e.currentTarget.style.color=C.frost;e.currentTarget.style.background="rgba(0,255,200,.03)";}}}
+                onMouseLeave={e=>{if(section!==item.id){e.currentTarget.style.color="rgba(168,216,234,.55)";e.currentTarget.style.background="transparent";}}}>
+                <span style={{fontSize:".95rem"}}>{item.icon}</span>
+                <span style={{flex:1}}>{item.label}</span>
+                {item.badge>0&&<span style={{fontSize:".62rem",padding:".12rem .45rem",borderRadius:9,background:"rgba(255,107,107,.15)",color:"#ff6b6b",border:"1px solid rgba(255,107,107,.2)"}}>{item.badge}</span>}
+              </div>
+            ))}
+          </div>
+        ))}
+      </nav>
+      <div style={{padding:"1.1rem 1.4rem",borderTop:"1px solid rgba(0,255,200,.06)",display:"flex",alignItems:"center",gap:".8rem"}}>
+        <span style={{fontSize:"1.5rem"}}>{user.avatar}</span>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:".82rem",color:C.ice,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.pseudo.split("#")[0]}</div>
+          <RoleBadge role={user.role}/>
+        </div>
+        <button onClick={()=>setUser(null)} title="Déconnexion" style={{background:"transparent",border:"none",cursor:"pointer",color:"rgba(168,216,234,.25)",fontSize:"1rem",padding:".2rem",lineHeight:1}}
+          onMouseEnter={e=>e.currentTarget.style.color="#ff6b6b"} onMouseLeave={e=>e.currentTarget.style.color="rgba(168,216,234,.25)"}>↩</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{display:"flex",minHeight:"100vh",background:C.deep}}>
+      <Sidebar/>
+      {mob&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:90}} onClick={()=>setMob(false)}/>}
+      <div style={{marginLeft:250,flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
+        <div style={{background:"rgba(0,8,20,.92)",borderBottom:"1px solid rgba(0,255,200,.07)",padding:".85rem 2rem",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,backdropFilter:"blur(10px)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"1rem"}}>
+            <button onClick={()=>setMob(!mob)} style={{display:"none",background:"transparent",border:"none",cursor:"pointer",color:C.frost,fontSize:"1.3rem",padding:".2rem"}} className="mob-btn">☰</button>
+            <span style={{fontFamily:"'Cinzel',serif",fontSize:".95rem",color:C.ice}}>{curItem?.icon} {curItem?.label}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:".8rem"}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:"#00ffc8",boxShadow:"0 0 8px #00ffc8"}}/>
+            <span style={{fontSize:".75rem",color:"rgba(168,216,234,.35)"}}>Grand Nord RP · En ligne</span>
+          </div>
+        </div>
+        <div style={{padding:"2rem",flex:1}}>{renderContent()}</div>
+      </div>
+      <Toast msg={toast.msg} show={toast.show}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – Accueil</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ═══ HERO ═══ */
+    #hero {
+      position:relative; z-index:1;
+      height:100vh;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; padding:2rem;
+    }
+    .hero-eyebrow {
+      font-size:.72rem; letter-spacing:.45em; text-transform:uppercase;
+      color:var(--aurora-1); margin-bottom:1.5rem;
+      opacity:0; animation:fadeUp .8s .4s forwards;
+    }
+    .hero-title {
+      font-family:'Cinzel',serif; font-weight:900;
+      font-size:clamp(3.5rem,9vw,8rem); line-height:.92;
+      text-transform:uppercase; letter-spacing:.05em;
+      opacity:0; animation:fadeUp .9s .6s forwards;
+    }
+    .hero-title .line-1 { display:block; color:var(--ice); }
+    .hero-title .line-2 {
+      display:block;
+      background:linear-gradient(90deg,var(--aurora-1),var(--aurora-2),var(--aurora-3),var(--aurora-4));
+      background-size:300% 100%;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+      animation:gradShift 5s linear infinite, fadeUp .9s .6s forwards;
+    }
+    .hero-sub {
+      margin-top:1.8rem; font-size:1.05rem; color:var(--frost);
+      max-width:520px; line-height:1.9;
+      opacity:0; animation:fadeUp .9s .9s forwards;
+    }
+    .hero-ctas {
+      margin-top:2.8rem; display:flex; gap:1.2rem; flex-wrap:wrap; justify-content:center;
+      opacity:0; animation:fadeUp .9s 1.1s forwards;
+    }
+    .scroll-hint {
+      position:absolute; bottom:2rem; left:50%; transform:translateX(-50%);
+      display:flex; flex-direction:column; align-items:center; gap:.5rem;
+      opacity:0; animation:fadeUp .8s 1.5s forwards;
+    }
+    .scroll-hint span { font-size:.62rem; letter-spacing:.28em; text-transform:uppercase; color:rgba(168,216,234,.45); }
+    .scroll-line {
+      width:1px; height:40px;
+      background:linear-gradient(to bottom,var(--aurora-1),transparent);
+      animation:scrollPulse 2s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%,100% { opacity:.4; } 50% { opacity:1; }
+    }
+
+    /* ═══ PRÉSENTATION ═══ */
+    #presentation {
+      position:relative; z-index:1;
+      padding:8rem 4rem;
+      background:linear-gradient(to bottom,transparent,rgba(0,20,40,.6),transparent);
+    }
+    .pres-inner {
+      max-width:1100px; margin:0 auto;
+      display:grid; grid-template-columns:1fr 1fr; gap:6rem; align-items:center;
+    }
+    .pres-text p { color:rgba(224,247,255,.7); line-height:1.9; margin-top:1.2rem; font-size:.97rem; }
+    .pres-stats { display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; }
+    .stat-card {
+      border:1px solid var(--card-border); border-radius:8px;
+      padding:1.8rem; background:rgba(0,255,200,.03);
+      text-align:center; transition:border-color .3s,background .3s,transform .3s; cursor:default;
+    }
+    .stat-card:hover { border-color:rgba(0,255,200,.4); background:rgba(0,255,200,.07); transform:translateY(-4px); }
+    .stat-number {
+      font-family:'Cinzel',serif; font-size:2.1rem; font-weight:900;
+      background:linear-gradient(135deg,var(--aurora-1),var(--aurora-2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .stat-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--frost); margin-top:.4rem; opacity:.65; }
+
+    /* ═══ LORE ═══ */
+    #lore {
+      position:relative; z-index:1;
+      padding:8rem 4rem;
+      background:radial-gradient(ellipse at center,rgba(0,170,255,.06) 0%,transparent 70%);
+    }
+    .lore-inner { max-width:860px; margin:0 auto; text-align:center; }
+    .lore-body { margin-top:2rem; color:rgba(224,247,255,.7); font-size:1.04rem; line-height:2; font-style:italic; }
+    .lore-quote {
+      margin:3rem auto; padding:2rem 3rem;
+      border-left:3px solid var(--aurora-1); border-right:3px solid var(--aurora-1);
+      background:rgba(0,255,200,.04); border-radius:4px;
+      font-family:'Cinzel',serif; font-size:1.1rem; color:var(--ice);
+    }
+    .lore-link { margin-top:2.5rem; }
+
+    /* ═══ RÈGLES PREVIEW ═══ */
+    #regles-preview {
+      position:relative; z-index:1;
+      padding:8rem 4rem;
+      background:linear-gradient(to bottom,transparent,rgba(0,10,30,.7),transparent);
+    }
+    .regles-inner { max-width:1100px; margin:0 auto; }
+    .regles-header { text-align:center; margin-bottom:4rem; }
+    .regles-header .section-line { margin:1.5rem auto; }
+    .rules-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.4rem; }
+    .rule-card { border:1px solid rgba(0,170,255,.15); border-radius:10px; padding:1.8rem; background:rgba(0,20,40,.4); backdrop-filter:blur(8px); transition:border-color .3s,transform .3s,box-shadow .3s; }
+    .rule-card:hover { border-color:rgba(0,255,200,.4); transform:translateY(-5px); box-shadow:0 10px 40px rgba(0,255,200,.08); }
+    .rule-icon { font-size:1.8rem; margin-bottom:.9rem; }
+    .rule-title { font-family:'Cinzel',serif; font-size:.95rem; color:var(--aurora-1); margin-bottom:.7rem; letter-spacing:.05em; }
+    .rule-desc { font-size:.86rem; color:rgba(224,247,255,.62); line-height:1.7; }
+
+    /* ═══ GALERIE PREVIEW ═══ */
+    #galerie-preview {
+      position:relative; z-index:1;
+      padding:8rem 4rem;
+      background:radial-gradient(ellipse at center,rgba(123,47,255,.05) 0%,transparent 70%);
+    }
+    .galerie-inner { max-width:1200px; margin:0 auto; }
+    .galerie-header { text-align:center; margin-bottom:4rem; }
+    .galerie-header .section-line { margin:1.5rem auto; }
+    .gallery-grid { display:grid; grid-template-columns:2fr 1fr 1fr; grid-template-rows:220px 220px; gap:10px; }
+    .gallery-item:first-child { grid-row:span 2; }
+    .gallery-placeholder {
+      width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:.5rem; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+      color:rgba(168,216,234,.45); border:1px dashed rgba(0,255,200,.18); border-radius:8px;
+      transition:border-color .3s,background .3s; background:rgba(0,20,40,.5);
+    }
+    .gallery-placeholder:hover { border-color:rgba(0,255,200,.45); background:rgba(0,255,200,.05); }
+    .ph-icon { font-size:2rem; opacity:.4; }
+    .gallery-note { margin-top:1.5rem; text-align:center; font-size:.78rem; color:rgba(168,216,234,.35); font-style:italic; }
+
+    /* ═══ DISCORD CTA ═══ */
+    #discord-cta {
+      position:relative; z-index:1;
+      padding:8rem 4rem; text-align:center; overflow:hidden;
+    }
+    .discord-glow {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      width:600px; height:600px;
+      background:radial-gradient(circle,rgba(0,255,200,.07) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .discord-inner { position:relative; z-index:2; max-width:580px; margin:0 auto; }
+    .discord-title { font-family:'Cinzel',serif; font-size:clamp(2rem,5vw,3.3rem); font-weight:900; color:var(--ice); margin-bottom:1.5rem; line-height:1.1; }
+    .discord-sub { color:rgba(224,247,255,.6); font-size:.97rem; line-height:1.9; margin-bottom:3rem; }
+    .btn-discord {
+      display:inline-flex; align-items:center; gap:.8rem;
+      font-family:'Cinzel',serif; font-size:.88rem; letter-spacing:.15em; text-transform:uppercase;
+      padding:1rem 2.8rem; border:none; cursor:pointer; text-decoration:none; border-radius:4px;
+      background:linear-gradient(135deg,#5865F2,#7289da); color:white; font-weight:600;
+      transition:transform .2s,box-shadow .3s; box-shadow:0 0 35px rgba(88,101,242,.3);
+    }
+    .btn-discord:hover { transform:translateY(-3px); box-shadow:0 0 60px rgba(88,101,242,.5); }
+
+    @media (max-width:768px) {
+      .pres-inner { grid-template-columns:1fr; gap:3rem; }
+      .rules-grid { grid-template-columns:1fr; }
+      .gallery-grid { grid-template-columns:1fr 1fr; grid-template-rows:auto; }
+      .gallery-item:first-child { grid-row:span 1; }
+      #presentation,#lore,#regles-preview,#galerie-preview,#discord-cta { padding:5rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora-canvas"></canvas>
+  <div class="stars" id="stars"></div>
+  <div id="snowflakes"></div>
+
+  <nav>
+    <a class="nav-logo" href="index.html">GRAND NORD RP</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+      <li><a href="login.html" class="nav-discord">Espace membre</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <p class="hero-eyebrow">Serveur FiveM Roleplay</p>
+    <h1 class="hero-title">
+      <span class="line-1">Grand</span>
+      <span class="line-2">Nord</span>
+    </h1>
+    <p class="hero-sub">Plonge au cœur d'un territoire sauvage et impitoyable. Construis ton destin sous les aurores boréales d'un univers RP immersif et communautaire.</p>
+    <div class="hero-ctas">
+      <a href="candidature.html" class="btn-primary">Postuler à la whitelist</a>
+      <a href="factions.html" class="btn-outline">Découvrir les factions</a>
+    </div>
+    <div class="scroll-hint">
+      <span>Découvrir</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- PRÉSENTATION -->
+  <section id="presentation">
+    <div class="pres-inner">
+      <div class="pres-text reveal">
+        <p class="section-label">Notre serveur</p>
+        <h2 class="section-title">Un territoire à<br>conquérir</h2>
+        <div class="section-line"></div>
+        <p>Grand Nord RP est un serveur FiveM dédié à une expérience de roleplay immersive et sérieuse. Dans un environnement hivernal hostile, chaque décision compte. Survie, commerce, criminalité, justice — toutes les voies s'offrent à toi.</p>
+        <p style="margin-top:1rem;">Rejoins une communauté passionnée qui repousse les limites du roleplay sur GTA V. Scripts custom, économie équilibrée, staff réactif.</p>
+        <div style="margin-top:2rem;"><a href="candidature.html" class="btn-primary">Rejoindre le serveur</a></div>
+      </div>
+      <div class="pres-stats reveal">
+        <div class="stat-card"><div class="stat-number">64</div><div class="stat-label">Slots joueurs</div></div>
+        <div class="stat-card"><div class="stat-number">24/7</div><div class="stat-label">Serveur actif</div></div>
+        <div class="stat-card"><div class="stat-number">100%</div><div class="stat-label">Scripts custom</div></div>
+        <div class="stat-card"><div class="stat-number">RP+</div><div class="stat-label">Communauté sérieuse</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LORE -->
+  <section id="lore">
+    <div class="lore-inner reveal">
+      <p class="section-label">Lore & Univers</p>
+      <h2 class="section-title">L'appel du Grand Nord</h2>
+      <div class="section-line" style="margin:1.5rem auto;"></div>
+      <p class="lore-body">Il y a des terres que les cartes ignorent. Des régions oubliées où l'hiver règne en maître absolu, où la loi des hommes cède à celle de la nature. Le Grand Nord n'est pas simplement un lieu — c'est une épreuve.</p>
+      <div class="lore-quote">"Ici, le froid ne tue pas les faibles. Il révèle qui tu es vraiment."</div>
+      <p class="lore-body">Des villes isolées, des forêts interminables, des routes verglacées. Des factions rivales s'affrontent pour le contrôle des ressources, du trafic, du pouvoir. Et toi — qui seras-tu dans ce chaos glacé ?</p>
+      <div class="lore-link"><a href="factions.html" class="btn-outline">Explorer les factions →</a></div>
+    </div>
+  </section>
+
+  <!-- RÈGLES PREVIEW -->
+  <section id="regles-preview">
+    <div class="regles-inner">
+      <div class="regles-header reveal">
+        <p class="section-label">Code de conduite</p>
+        <h2 class="section-title">Les règles du Grand Nord</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="rules-grid">
+        <div class="rule-card reveal reveal-delay-1"><div class="rule-icon">❄️</div><div class="rule-title">Roleplay sérieux</div><div class="rule-desc">Le RP est obligatoire en tout temps. Le hors-jeu en vocal ou en jeu est strictement interdit.</div></div>
+        <div class="rule-card reveal reveal-delay-2"><div class="rule-icon">🏔️</div><div class="rule-title">Respect mutuel</div><div class="rule-desc">Tout propos irrespectueux ou toxique envers les joueurs et le staff entraîne une sanction.</div></div>
+        <div class="rule-card reveal reveal-delay-3"><div class="rule-icon">🐺</div><div class="rule-title">No metagaming</div><div class="rule-desc">Les informations obtenues hors-jeu ne peuvent pas être utilisées en jeu. Respecte la frontière IC/OOC.</div></div>
+        <div class="rule-card reveal reveal-delay-1"><div class="rule-icon">🔫</div><div class="rule-title">No deathmatch</div><div class="rule-desc">Toute violence doit être motivée par un contexte RP solide. Le RDM et VDM sont sanctionnés.</div></div>
+        <div class="rule-card reveal reveal-delay-2"><div class="rule-icon">⚖️</div><div class="rule-title">Respect du staff</div><div class="rule-desc">Les décisions du staff sont finales. Les litiges se règlent via ticket Discord.</div></div>
+        <div class="rule-card reveal reveal-delay-3"><div class="rule-icon">🌌</div><div class="rule-title">Whitelist requise</div><div class="rule-desc">L'accès nécessite une candidature approuvée. Postule sur Discord ou via notre formulaire.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALERIE -->
+  <section id="galerie-preview">
+    <div class="galerie-inner">
+      <div class="galerie-header reveal">
+        <p class="section-label">Captures</p>
+        <h2 class="section-title">L'univers en images</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="gallery-grid reveal">
+        <div class="gallery-item"><div class="gallery-placeholder"><span class="ph-icon">🏔️</span><span>Screenshot principal</span></div></div>
+        <div class="gallery-item"><div class="gallery-placeholder"><span class="ph-icon">🌲</span><span>Forêt nordique</span></div></div>
+        <div class="gallery-item"><div class="gallery-placeholder"><span class="ph-icon">🌌</span><span>Aurores boréales</span></div></div>
+        <div class="gallery-item"><div class="gallery-placeholder"><span class="ph-icon">🏙️</span><span>Ville principale</span></div></div>
+        <div class="gallery-item"><div class="gallery-placeholder"><span class="ph-icon">❄️</span><span>Paysage hivernal</span></div></div>
+      </div>
+      <p class="gallery-note">Remplace les placeholders par tes screenshots de serveur</p>
+    </div>
+  </section>
+
+  <!-- DISCORD CTA -->
+  <section id="discord-cta">
+    <div class="discord-glow"></div>
+    <div class="discord-inner reveal">
+      <p class="section-label">Rejoindre la communauté</p>
+      <h2 class="discord-title">Prêt à affronter<br>le Grand Nord ?</h2>
+      <p class="discord-sub">Rejoins notre Discord pour postuler à la whitelist, rencontrer la communauté et vivre une expérience RP unique.</p>
+      <a href="https://discord.gg/TON-LIEN" class="btn-discord" target="_blank">🎮 Rejoindre le Discord</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">GRAND NORD RP</div>
+    <ul class="footer-links">
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 Grand Nord RP · FiveM</p>
+  </footer>
+
+  <script src="shared.js"></script>
+</body>
+</html>

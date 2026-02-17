@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – Économie</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ═══ ECONOMY OVERVIEW ═══ */
+    .eco-overview {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:1.2rem;
+      margin-bottom:5rem;
+    }
+    .eco-stat {
+      text-align:center;
+      padding:2rem 1.5rem;
+      border:1px solid rgba(0,255,200,.12);
+      border-radius:10px;
+      background:rgba(0,20,40,.4);
+      backdrop-filter:blur(8px);
+      transition:border-color .3s,transform .3s;
+    }
+    .eco-stat:hover { border-color:rgba(0,255,200,.35); transform:translateY(-4px); }
+    .eco-stat-icon { font-size:2rem; margin-bottom:.8rem; }
+    .eco-stat-val {
+      font-family:'Cinzel',serif; font-size:1.9rem; font-weight:900;
+      background:linear-gradient(135deg,var(--aurora-1),var(--aurora-2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .eco-stat-lbl { font-size:.7rem; letter-spacing:.18em; text-transform:uppercase; color:rgba(168,216,234,.55); margin-top:.4rem; }
+
+    /* ═══ JOBS TABS ═══ */
+    .jobs-tabs {
+      display:flex; gap:.5rem;
+      margin-bottom:2.5rem;
+      flex-wrap:wrap;
+    }
+    .tab-btn {
+      font-family:'Cinzel',serif; font-size:.75rem; letter-spacing:.15em; text-transform:uppercase;
+      padding:.55rem 1.4rem; border-radius:20px; border:1px solid rgba(0,255,200,.2);
+      background:transparent; color:var(--frost); cursor:pointer;
+      transition:all .3s;
+    }
+    .tab-btn:hover, .tab-btn.active {
+      border-color:var(--aurora-1); color:var(--aurora-1);
+      background:rgba(0,255,200,.07);
+    }
+
+    /* ═══ JOBS GRID ═══ */
+    .jobs-grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:1.4rem;
+    }
+    .job-card {
+      border:1px solid rgba(0,255,200,.12);
+      border-radius:10px;
+      padding:1.8rem;
+      background:rgba(0,15,30,.5);
+      backdrop-filter:blur(8px);
+      transition:border-color .3s,transform .3s,box-shadow .3s;
+      position:relative;
+      overflow:hidden;
+    }
+    .job-card::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0;
+      height:2px;
+      background:linear-gradient(90deg,transparent,var(--job-color,var(--aurora-1)),transparent);
+      opacity:0; transition:opacity .3s;
+    }
+    .job-card:hover { border-color:var(--job-color,rgba(0,255,200,.4)); transform:translateY(-5px); box-shadow:0 12px 40px rgba(0,0,0,.2); }
+    .job-card:hover::before { opacity:1; }
+    .job-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1rem; }
+    .job-icon-wrap { font-size:2.2rem; }
+    .job-type {
+      font-size:.65rem; letter-spacing:.18em; text-transform:uppercase;
+      padding:.25rem .7rem; border-radius:12px;
+      border:1px solid var(--job-color,var(--aurora-1));
+      color:var(--job-color,var(--aurora-1));
+    }
+    .job-name { font-family:'Cinzel',serif; font-size:1.05rem; color:var(--ice); margin-bottom:.5rem; }
+    .job-desc { font-size:.86rem; color:rgba(224,247,255,.6); line-height:1.75; margin-bottom:1.2rem; }
+    .job-income {
+      display:flex; align-items:center; gap:.5rem;
+      padding-top:1rem; border-top:1px solid rgba(255,255,255,.06);
+      font-size:.8rem;
+    }
+    .income-label { color:rgba(168,216,234,.45); }
+    .income-val { font-family:'Cinzel',serif; color:var(--job-color,var(--aurora-1)); font-weight:600; }
+    .income-bar {
+      flex:1; height:3px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden;
+    }
+    .income-fill {
+      height:100%; border-radius:2px;
+      background:var(--job-color,var(--aurora-1));
+      width:var(--fill,50%);
+    }
+
+    /* ═══ MARCHÉ SECTION ═══ */
+    .market-section {
+      margin-top:5rem;
+      padding:3rem;
+      border:1px solid rgba(0,255,200,.12);
+      border-radius:12px;
+      background:rgba(0,10,25,.5);
+      backdrop-filter:blur(10px);
+    }
+    .market-section .section-line { margin:1rem 0 2rem; }
+    .market-table { width:100%; border-collapse:collapse; }
+    .market-table th {
+      font-family:'Cinzel',serif; font-size:.72rem; letter-spacing:.2em; text-transform:uppercase;
+      color:var(--aurora-1); padding:.8rem 1rem; text-align:left;
+      border-bottom:1px solid rgba(0,255,200,.15);
+    }
+    .market-table td {
+      padding:.8rem 1rem; font-size:.88rem; color:rgba(224,247,255,.7);
+      border-bottom:1px solid rgba(255,255,255,.04);
+    }
+    .market-table tr:hover td { background:rgba(0,255,200,.03); }
+    .price-up { color:#00ffc8; }
+    .price-down { color:#ff6b6b; }
+    .price-stable { color:rgba(168,216,234,.5); }
+    .resource-icon { margin-right:.5rem; }
+
+    @media (max-width:900px) {
+      .eco-overview { grid-template-columns:repeat(2,1fr); }
+      .jobs-grid { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:600px) {
+      .eco-overview { grid-template-columns:1fr 1fr; }
+      .jobs-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora-canvas"></canvas>
+  <div class="stars" id="stars"></div>
+  <div id="snowflakes"></div>
+
+  <nav>
+    <a class="nav-logo" href="index.html">GRAND NORD RP</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html" class="active">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+      <li><a href="login.html" class="nav-discord">Espace membre</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <p class="eyebrow">Système économique</p>
+    <h1>Économie <span>&</span> Métiers</h1>
+    <p>Une économie dynamique et équilibrée au cœur de l'expérience Grand Nord. Chaque ressource a de la valeur. Chaque métier a sa place.</p>
+    <div class="hero-divider"></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- STATS ÉCONMIE -->
+    <div class="eco-overview reveal">
+      <div class="eco-stat"><div class="eco-stat-icon">💰</div><div class="eco-stat-val">GNC</div><div class="eco-stat-lbl">Monnaie du serveur</div></div>
+      <div class="eco-stat"><div class="eco-stat-icon">🏪</div><div class="eco-stat-val">20+</div><div class="eco-stat-lbl">Commerces disponibles</div></div>
+      <div class="eco-stat"><div class="eco-stat-icon">⚙️</div><div class="eco-stat-val">15+</div><div class="eco-stat-lbl">Métiers uniques</div></div>
+      <div class="eco-stat"><div class="eco-stat-icon">📈</div><div class="eco-stat-val">Live</div><div class="eco-stat-lbl">Prix dynamiques</div></div>
+    </div>
+
+    <!-- JOBS -->
+    <div class="reveal">
+      <p class="section-label">Activités professionnelles</p>
+      <h2 class="section-title">Les métiers disponibles</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="jobs-tabs reveal">
+      <button class="tab-btn active">Tous</button>
+      <button class="tab-btn">Légaux</button>
+      <button class="tab-btn">Illégaux</button>
+      <button class="tab-btn">Services</button>
+    </div>
+
+    <div class="jobs-grid">
+
+      <div class="job-card reveal" style="--job-color:#4db8ff;">
+        <div class="job-header"><div class="job-icon-wrap">🪓</div><span class="job-type">Légal</span></div>
+        <div class="job-name">Bûcheron</div>
+        <div class="job-desc">Abattez des arbres dans les forêts nordiques et livrez le bois aux scieries et usines locales.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:40%;"></div></div>
+          <span class="income-val">~800 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-1" style="--job-color:#00ffc8;">
+        <div class="job-header"><div class="job-icon-wrap">🎣</div><span class="job-type">Légal</span></div>
+        <div class="job-name">Pêcheur</div>
+        <div class="job-desc">Pêche sur glace dans des lacs isolés. Poissons rares, risques de froid, mais prix au marché élevés.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:50%;"></div></div>
+          <span class="income-val">~1 200 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-2" style="--job-color:#f0a500;">
+        <div class="job-header"><div class="job-icon-wrap">⛏️</div><span class="job-type">Légal</span></div>
+        <div class="job-name">Mineur</div>
+        <div class="job-desc">Extrayez minerais et métaux précieux dans les mines souterraines. Convoités par tous, protégés par personne.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:65%;"></div></div>
+          <span class="income-val">~2 000 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal" style="--job-color:#ff6b6b;">
+        <div class="job-header"><div class="job-icon-wrap">💊</div><span class="job-type">Illégal</span></div>
+        <div class="job-name">Trafiquant</div>
+        <div class="job-desc">Production et revente de substances illicites. Hauts risques, hauts profits, et la NPD sur le dos.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:85%;"></div></div>
+          <span class="income-val">~5 000 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-1" style="--job-color:#9b59b6;">
+        <div class="job-header"><div class="job-icon-wrap">🔫</div><span class="job-type">Illégal</span></div>
+        <div class="job-name">Armurier clandestin</div>
+        <div class="job-desc">Fabrique et revend des armes hors circuit légal. Discrétion absolue requise. La demande ne manque pas.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:78%;"></div></div>
+          <span class="income-val">~4 200 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-2" style="--job-color:#ff4d6d;">
+        <div class="job-header"><div class="job-icon-wrap">🚔</div><span class="job-type">Service</span></div>
+        <div class="job-name">Policier (NPD)</div>
+        <div class="job-desc">Patrouille, arrestations, investigations. Salaire stable, avantages d'équipement et évolutions de grade.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:55%;"></div></div>
+          <span class="income-val">~1 800 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal" style="--job-color:#ff4d6d;">
+        <div class="job-header"><div class="job-icon-wrap">🏥</div><span class="job-type">Service</span></div>
+        <div class="job-name">Médecin (AMS)</div>
+        <div class="job-desc">Soins d'urgence, réanimations, chirurgies. Un métier essentiel pour toute la communauté du serveur.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:50%;"></div></div>
+          <span class="income-val">~1 600 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-1" style="--job-color:#4db8ff;">
+        <div class="job-header"><div class="job-icon-wrap">🚚</div><span class="job-type">Légal</span></div>
+        <div class="job-name">Transporteur</div>
+        <div class="job-desc">Livraison de marchandises légales sur routes verglacées. Possibilité de transporter aussi de l'illégal… à tes risques.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:45%;"></div></div>
+          <span class="income-val">~1 000 GNC/h</span>
+        </div>
+      </div>
+
+      <div class="job-card reveal reveal-delay-2" style="--job-color:#00ffc8;">
+        <div class="job-header"><div class="job-icon-wrap">🏪</div><span class="job-type">Légal</span></div>
+        <div class="job-name">Commerçant</div>
+        <div class="job-desc">Gère une boutique en ville. Achète en gros, revend au détail. Construis un empire économique de zéro.</div>
+        <div class="job-income">
+          <span class="income-label">Revenu</span>
+          <div class="income-bar"><div class="income-fill" style="--fill:70%;"></div></div>
+          <span class="income-val">Variable</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MARCHÉ -->
+    <div class="market-section reveal">
+      <p class="section-label">Bourse des ressources</p>
+      <h2 class="section-title">Prix du marché</h2>
+      <div class="section-line"></div>
+      <table class="market-table">
+        <thead>
+          <tr>
+            <th>Ressource</th>
+            <th>Prix actuel</th>
+            <th>Variation</th>
+            <th>Demande</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="resource-icon">🌲</span>Bois de pin</td><td>42 GNC/u</td><td class="price-up">▲ +8%</td><td>Forte</td></tr>
+          <tr><td><span class="resource-icon">🐟</span>Saumon nordique</td><td>185 GNC/u</td><td class="price-stable">— Stable</td><td>Modérée</td></tr>
+          <tr><td><span class="resource-icon">⛏️</span>Minerai de fer</td><td>310 GNC/u</td><td class="price-down">▼ -3%</td><td>Haute</td></tr>
+          <tr><td><span class="resource-icon">💎</span>Cristal de glace</td><td>980 GNC/u</td><td class="price-up">▲ +22%</td><td>Très haute</td></tr>
+          <tr><td><span class="resource-icon">🛢️</span>Carburant synthétique</td><td>520 GNC/u</td><td class="price-stable">— Stable</td><td>Constante</td></tr>
+          <tr><td><span class="resource-icon">🦌</span>Viande de renne</td><td>240 GNC/u</td><td class="price-up">▲ +5%</td><td>Modérée</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem;font-size:.76rem;color:rgba(168,216,234,.35);font-style:italic;">Les prix varient selon l'offre et la demande en temps réel sur le serveur.</p>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-logo">GRAND NORD RP</div>
+    <ul class="footer-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html">News</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 Grand Nord RP · FiveM</p>
+  </footer>
+
+  <script src="shared.js"></script>
+</body>
+</html>

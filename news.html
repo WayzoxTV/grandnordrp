@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Nord RP – News</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ═══ LAYOUT ═══ */
+    .news-layout {
+      display:grid;
+      grid-template-columns:1fr 320px;
+      gap:3rem;
+      align-items:start;
+    }
+
+    /* ═══ PINNED ═══ */
+    .pinned-badge {
+      display:inline-flex; align-items:center; gap:.4rem;
+      font-size:.66rem; letter-spacing:.2em; text-transform:uppercase;
+      color:#f0a500; border:1px solid rgba(240,165,0,.3);
+      padding:.2rem .7rem; border-radius:12px;
+      background:rgba(240,165,0,.06); margin-bottom:1rem;
+    }
+    .news-featured {
+      border:1px solid rgba(0,255,200,.2);
+      border-radius:12px; overflow:hidden;
+      background:var(--card-bg); backdrop-filter:blur(10px);
+      margin-bottom:2rem;
+      transition:border-color .3s,box-shadow .3s;
+    }
+    .news-featured:hover {
+      border-color:rgba(0,255,200,.45);
+      box-shadow:0 10px 40px rgba(0,255,200,.07);
+    }
+    .news-featured-banner {
+      height:180px; background:linear-gradient(135deg,rgba(0,50,80,.8),rgba(0,100,150,.5));
+      display:flex; align-items:center; justify-content:center; font-size:4rem;
+      position:relative; overflow:hidden;
+    }
+    .news-featured-banner::after {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 30% 50%,rgba(0,255,200,.08),transparent 60%);
+    }
+    .news-featured-body { padding:2rem 2.2rem; }
+    .news-date { font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(168,216,234,.45); margin-bottom:.6rem; }
+    .news-title { font-family:'Cinzel',serif; font-size:1.35rem; color:var(--ice); margin-bottom:.8rem; line-height:1.25; }
+    .news-excerpt { font-size:.9rem; color:rgba(224,247,255,.65); line-height:1.8; margin-bottom:1.2rem; }
+    .news-tags { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .news-tag {
+      font-size:.65rem; letter-spacing:.12em; text-transform:uppercase;
+      padding:.25rem .65rem; border-radius:12px;
+      border:1px solid rgba(0,255,200,.2); color:rgba(0,255,200,.7);
+    }
+    .news-tag.patch { border-color:rgba(77,184,255,.3); color:rgba(77,184,255,.7); }
+    .news-tag.event { border-color:rgba(240,165,0,.3); color:rgba(240,165,0,.7); }
+    .news-tag.faction { border-color:rgba(155,89,182,.3); color:rgba(155,89,182,.7); }
+    .news-tag.urgent { border-color:rgba(255,77,109,.3); color:rgba(255,77,109,.7); }
+
+    /* ═══ NEWS LIST ═══ */
+    .news-list { display:flex; flex-direction:column; gap:1.2rem; }
+    .news-item {
+      border:1px solid rgba(0,255,200,.1);
+      border-radius:10px; padding:1.5rem 1.8rem;
+      background:rgba(0,15,30,.45); backdrop-filter:blur(8px);
+      display:grid; grid-template-columns:auto 1fr; gap:1.5rem;
+      align-items:start;
+      transition:border-color .3s,transform .3s;
+      cursor:pointer;
+    }
+    .news-item:hover { border-color:rgba(0,255,200,.3); transform:translateX(4px); }
+    .news-item-date {
+      text-align:center; min-width:50px;
+      font-family:'Cinzel',serif;
+    }
+    .date-day { font-size:1.5rem; font-weight:900; color:var(--aurora-1); line-height:1; }
+    .date-month { font-size:.65rem; letter-spacing:.15em; text-transform:uppercase; color:rgba(168,216,234,.45); }
+    .news-item-title { font-family:'Cinzel',serif; font-size:1rem; color:var(--ice); margin-bottom:.4rem; }
+    .news-item-excerpt { font-size:.84rem; color:rgba(224,247,255,.55); line-height:1.7; }
+    .news-item-footer { display:flex; align-items:center; gap:.6rem; margin-top:.8rem; }
+
+    /* ═══ SIDEBAR ═══ */
+    .news-sidebar { display:flex; flex-direction:column; gap:1.5rem; }
+    .sidebar-card {
+      border:1px solid rgba(0,255,200,.12);
+      border-radius:10px; padding:1.6rem;
+      background:rgba(0,15,30,.4);
+    }
+    .sidebar-card h3 {
+      font-family:'Cinzel',serif; font-size:.92rem; color:var(--aurora-1);
+      margin-bottom:1rem; letter-spacing:.08em;
+    }
+    .changelog-entry { padding:.8rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    .changelog-entry:last-child { border-bottom:none; padding-bottom:0; }
+    .changelog-ver {
+      font-family:'Cinzel',serif; font-size:.75rem; color:var(--aurora-1);
+      margin-bottom:.3rem;
+    }
+    .changelog-list { list-style:none; }
+    .changelog-list li {
+      font-size:.8rem; color:rgba(224,247,255,.55); line-height:1.7;
+      display:flex; gap:.5rem; align-items:flex-start;
+    }
+    .cl-add { color:#00ffc8; font-weight:700; flex-shrink:0; }
+    .cl-fix { color:#f0a500; font-weight:700; flex-shrink:0; }
+    .cl-remove { color:#ff6b6b; font-weight:700; flex-shrink:0; }
+
+    .category-filters { display:flex; flex-direction:column; gap:.4rem; }
+    .cat-filter {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.6rem .8rem; border-radius:6px; cursor:pointer;
+      font-size:.82rem; color:rgba(224,247,255,.65);
+      border:1px solid transparent;
+      transition:all .25s;
+    }
+    .cat-filter:hover, .cat-filter.active {
+      border-color:rgba(0,255,200,.2);
+      background:rgba(0,255,200,.04);
+      color:var(--aurora-1);
+    }
+    .cat-count {
+      font-size:.7rem; padding:.15rem .5rem; border-radius:10px;
+      background:rgba(0,255,200,.08); color:var(--aurora-1);
+    }
+
+    @media (max-width:900px) {
+      .news-layout { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aurora-canvas"></canvas>
+  <div class="stars" id="stars"></div>
+  <div id="snowflakes"></div>
+
+  <nav>
+    <a class="nav-logo" href="index.html">GRAND NORD RP</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+      <li><a href="news.html" class="active">News</a></li>
+      <li><a href="login.html" class="nav-discord">Espace membre</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <p class="eyebrow">Actualités</p>
+    <h1>News <span>& Changelog</span></h1>
+    <p>Reste informé des dernières mises à jour, événements et annonces importantes du serveur Grand Nord RP.</p>
+    <div class="hero-divider"></div>
+  </div>
+
+  <div class="page-content">
+    <div class="news-layout">
+
+      <!-- ARTICLES -->
+      <div>
+        <!-- FEATURED -->
+        <div class="news-featured reveal">
+          <div class="news-featured-banner">🌌</div>
+          <div class="news-featured-body">
+            <div class="pinned-badge">📌 Épinglé</div>
+            <div class="news-date">15 Février 2025</div>
+            <h2 class="news-title">Mise à jour majeure 2.0 — L'Ère du Blizzard</h2>
+            <p class="news-excerpt">La plus grande mise à jour depuis l'ouverture du serveur est arrivée. Nouveau territoire au nord, système météo dynamique, refonte de l'économie, 3 nouveaux métiers et la création officielle de la Famiglia Boreale. Une nouvelle ère commence pour Grand Nord RP.</p>
+            <div class="news-tags">
+              <span class="news-tag patch">Mise à jour majeure</span>
+              <span class="news-tag">Nouveaux territoires</span>
+              <span class="news-tag faction">Nouvelle faction</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEWS LIST -->
+        <div class="news-list">
+
+          <div class="news-item reveal">
+            <div class="news-item-date"><div class="date-day">12</div><div class="date-month">Fév.</div></div>
+            <div>
+              <div class="news-item-title">Événement spécial — La Trêve du Solstice</div>
+              <div class="news-item-excerpt">Pendant 48h, un cessez-le-feu général est proclamé. Les factions ennemies se retrouvent autour d'un marché nordique unique. Quêtes collectives, récompenses exclusives.</div>
+              <div class="news-item-footer"><span class="news-tag event">Événement</span></div>
+            </div>
+          </div>
+
+          <div class="news-item reveal reveal-delay-1">
+            <div class="news-item-date"><div class="date-day">08</div><div class="date-month">Fév.</div></div>
+            <div>
+              <div class="news-item-title">Patch 1.9.4 — Corrections et équilibrage</div>
+              <div class="news-item-excerpt">Correction du bug de collision sur la route du col nord. Rééquilibrage des revenus miniers. Ajout de 5 nouvelles tenues hivernales exclusives.</div>
+              <div class="news-item-footer"><span class="news-tag patch">Patch</span></div>
+            </div>
+          </div>
+
+          <div class="news-item reveal reveal-delay-2">
+            <div class="news-item-date"><div class="date-day">03</div><div class="date-month">Fév.</div></div>
+            <div>
+              <div class="news-item-title">Recrutement staff — 2 postes de modérateur</div>
+              <div class="news-item-excerpt">L'équipe staff cherche 2 modérateurs actifs. Candidatures via Discord uniquement. Critères : sérieux, disponibilité min. 10h/semaine, bonne connaissance des règles RP.</div>
+              <div class="news-item-footer"><span class="news-tag urgent">Urgent</span></div>
+            </div>
+          </div>
+
+          <div class="news-item reveal">
+            <div class="news-item-date"><div class="date-day">28</div><div class="date-month">Jan.</div></div>
+            <div>
+              <div class="news-item-title">Les Loups du Blizzard ouvrent leur recrutement</div>
+              <div class="news-item-excerpt">La faction des Loups du Blizzard a officiellement ouvert son recrutement interne. Contactez un Loup Gris en jeu pour commencer votre intégration.</div>
+              <div class="news-item-footer"><span class="news-tag faction">Faction</span></div>
+            </div>
+          </div>
+
+          <div class="news-item reveal reveal-delay-1">
+            <div class="news-item-date"><div class="date-day">20</div><div class="date-month">Jan.</div></div>
+            <div>
+              <div class="news-item-title">Patch 1.9.2 — Système de réputation</div>
+              <div class="news-item-excerpt">Introduction du système de réputation par faction. Chaque action en jeu influence ta réputation auprès des organisations. Déblocage de missions exclusives à certains paliers.</div>
+              <div class="news-item-footer"><span class="news-tag patch">Patch</span><span class="news-tag">Nouveau système</span></div>
+            </div>
+          </div>
+
+          <div class="news-item reveal reveal-delay-2">
+            <div class="news-item-date"><div class="date-day">10</div><div class="date-month">Jan.</div></div>
+            <div>
+              <div class="news-item-title">Ouverture officielle du serveur Grand Nord RP</div>
+              <div class="news-item-excerpt">C'est officiel — Grand Nord RP ouvre ses portes au public whitelisté ! Après 4 mois de développement intensif, l'aventure commence. Bienvenue dans le froid.</div>
+              <div class="news-item-footer"><span class="news-tag event">Lancement</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="news-sidebar">
+
+        <div class="sidebar-card reveal">
+          <h3>🔍 Filtrer</h3>
+          <div class="category-filters">
+            <div class="cat-filter active">Tout afficher <span class="cat-count">7</span></div>
+            <div class="cat-filter">Mises à jour <span class="cat-count">3</span></div>
+            <div class="cat-filter">Événements <span class="cat-count">2</span></div>
+            <div class="cat-filter">Factions <span class="cat-count">1</span></div>
+            <div class="cat-filter">Annonces <span class="cat-count">1</span></div>
+          </div>
+        </div>
+
+        <div class="sidebar-card reveal reveal-delay-1">
+          <h3>⚙️ Changelog technique</h3>
+          <div class="changelog-entry">
+            <div class="changelog-ver">v2.0.0 — 15/02/2025</div>
+            <ul class="changelog-list">
+              <li><span class="cl-add">+</span> Zone nordique étendue (20km²)</li>
+              <li><span class="cl-add">+</span> Météo dynamique (tempête, blizzard)</li>
+              <li><span class="cl-add">+</span> Métier : chasseur de primes</li>
+              <li><span class="cl-fix">~</span> Refonte système économique</li>
+            </ul>
+          </div>
+          <div class="changelog-entry">
+            <div class="changelog-ver">v1.9.4 — 08/02/2025</div>
+            <ul class="changelog-list">
+              <li><span class="cl-fix">~</span> Fix collision route col nord</li>
+              <li><span class="cl-fix">~</span> Équilibrage revenus miniers</li>
+              <li><span class="cl-add">+</span> 5 tenues hivernales</li>
+              <li><span class="cl-remove">–</span> Suppression doublons véhicules</li>
+            </ul>
+          </div>
+          <div class="changelog-entry">
+            <div class="changelog-ver">v1.9.2 — 20/01/2025</div>
+            <ul class="changelog-list">
+              <li><span class="cl-add">+</span> Système de réputation</li>
+              <li><span class="cl-add">+</span> Missions faction exclusives</li>
+              <li><span class="cl-fix">~</span> Fix inventaire doublé</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="sidebar-card reveal reveal-delay-2">
+          <h3>📣 Discord</h3>
+          <p style="font-size:.84rem;color:rgba(224,247,255,.55);line-height:1.7;margin-bottom:1rem;">Rejoins le Discord pour recevoir toutes les notifications en temps réel.</p>
+          <a href="https://discord.gg/TON-LIEN" class="btn-primary" target="_blank" style="font-size:.78rem;padding:.7rem 1.4rem;display:inline-flex;">🎮 Discord</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-logo">GRAND NORD RP</div>
+    <ul class="footer-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="factions.html">Factions</a></li>
+      <li><a href="economie.html">Économie</a></li>
+      <li><a href="candidature.html">Candidature</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 Grand Nord RP · FiveM</p>
+  </footer>
+
+  <script src="shared.js"></script>
+  <script>
+    document.querySelectorAll('.cat-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
