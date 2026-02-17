@@ -89,21 +89,36 @@ const DEFAULT = {
   ],
 };
 
-const DISCORD_USERS = [
-  {id:"1",pseudo:"OwnerNord#0001",avatar:"👑",role:"owner"},
-  {id:"2",pseudo:"Admin_Loup#1337",avatar:"⚡",role:"admin"},
-  {id:"3",pseudo:"Modo_Glace#4242",avatar:"🛡️",role:"modo"},
-];
+// ── AUTH SYSTEM ──
+const ROOT_DEFAULT = {
+  id:"root-001",pseudo:"RootAdmin",email:"root@grandnord.rp",
+  password:"GrandNord2025!",role:"owner",avatar:"👑",
+  joinDate:new Date().toISOString().split("T")[0],active:true,isRoot:true
+};
+function getAccounts(){
+  try{
+    const d=JSON.parse(localStorage.getItem("gnrp-accounts")||"null");
+    if(!d||d.length===0){const a=[ROOT_DEFAULT];localStorage.setItem("gnrp-accounts",JSON.stringify(a));return a;}
+    if(!d.find(a=>a.id==="root-001")){d.unshift(ROOT_DEFAULT);localStorage.setItem("gnrp-accounts",JSON.stringify(d));}
+    return d;
+  }catch{return [ROOT_DEFAULT];}
+}
+function saveAccounts(a){localStorage.setItem("gnrp-accounts",JSON.stringify(a));}
+function getSession(){try{return JSON.parse(localStorage.getItem("gnrp-session")||"null");}catch{return null;}}
+function saveSession(u){localStorage.setItem("gnrp-session",JSON.stringify(u));}
+function clearSession(){localStorage.removeItem("gnrp-session");}
 
 const ROLES = {
   owner:{label:"Owner",color:"#f0a500",bg:"rgba(240,165,0,.12)"},
   admin:{label:"Admin",color:"#00ffc8",bg:"rgba(0,255,200,.1)"},
   modo:{label:"Modérateur",color:"#4db8ff",bg:"rgba(77,184,255,.1)"},
+  member:{label:"Membre",color:"#888",bg:"rgba(136,136,136,.08)"},
 };
 const PERMS = {
   owner:["all"],
-  admin:["site","pages","factions","news","changelog","staff"],
+  admin:["site","pages","factions","news","changelog","staff","accounts"],
   modo:["candidatures","news"],
+  member:[],
 };
 const can = (role,p) => (PERMS[role]||[]).includes("all") || (PERMS[role]||[]).includes(p);
 
@@ -775,6 +790,156 @@ function StaffManager({data, onUpdate, user, showToast}) {
 }
 
 // ══════════════════════════════════════════
+//  ACCOUNTS MANAGER
+// ══════════════════════════════════════════
+function AccountsManager({user, showToast}) {
+  const [accounts, setAccounts] = useState(getAccounts());
+  const [modal, setModal]       = useState(null);
+  const [f, setF]               = useState({pseudo:"",email:"",password:"",role:"member",avatar:"🐺",active:true});
+  const [editPwd, setEditPwd]   = useState("");
+  const sv = (k,v) => setF(x=>({...x,[k]:v}));
+
+  const refresh = () => setAccounts(getAccounts());
+
+  const openAdd  = () => { setF({pseudo:"",email:"",password:"",role:"member",avatar:"🐺",active:true}); setModal("add"); };
+  const openEdit = (a) => { setF({...a,password:""}); setEditPwd(""); setModal("edit"); };
+
+  const saveAdd = () => {
+    if(!f.pseudo||!f.email||!f.password){ showToast("Tous les champs obligatoires !"); return; }
+    if(f.password.length<6){ showToast("Mot de passe trop court (6 car. min)"); return; }
+    const all = getAccounts();
+    if(all.find(a=>a.email.toLowerCase()===f.email.toLowerCase())){ showToast("E-mail déjà utilisé !"); return; }
+    if(all.find(a=>a.pseudo.toLowerCase()===f.pseudo.toLowerCase())){ showToast("Pseudo déjà pris !"); return; }
+    const newAcc = {...f, id:"user-"+Date.now(), joinDate:new Date().toISOString().split("T")[0], isRoot:false};
+    saveAccounts([...all, newAcc]);
+    refresh(); setModal(null); showToast("Compte créé avec succès !");
+  };
+
+  const saveEdit = () => {
+    const all = getAccounts();
+    const updated = all.map(a => {
+      if(a.id!==f.id) return a;
+      const u = {...a, pseudo:f.pseudo, email:f.email, role:f.role, avatar:f.avatar, active:f.active};
+      if(editPwd.length>=6) u.password = editPwd;
+      return u;
+    });
+    saveAccounts(updated); refresh(); setModal(null); showToast("Compte mis à jour !");
+  };
+
+  const toggleActive = (id) => {
+    const all = getAccounts();
+    const t = all.find(a=>a.id===id);
+    if(t?.isRoot){ showToast("Impossible de désactiver le compte ROOT !"); return; }
+    saveAccounts(all.map(a=>a.id===id?{...a,active:!a.active}:a));
+    refresh(); showToast("Statut mis à jour !");
+  };
+
+  const delAccount = (id) => {
+    const all = getAccounts();
+    if(all.find(a=>a.id===id)?.isRoot){ showToast("Impossible de supprimer le compte ROOT !"); return; }
+    if(id===user.id){ showToast("Impossible de supprimer votre propre compte !"); return; }
+    saveAccounts(all.filter(a=>a.id!==id)); refresh(); showToast("Compte supprimé !");
+  };
+
+  const resetPassword = (id, newPwd) => {
+    if(!newPwd||newPwd.length<6){ showToast("Mot de passe trop court !"); return; }
+    const all = getAccounts();
+    saveAccounts(all.map(a=>a.id===id?{...a,password:newPwd}:a));
+    refresh(); showToast("Mot de passe réinitialisé !");
+  };
+
+  const roleOptions = can(user.role,"all")
+    ? [{v:"owner",l:"Owner"},{v:"admin",l:"Admin"},{v:"modo",l:"Modérateur"},{v:"member",l:"Membre"}]
+    : [{v:"modo",l:"Modérateur"},{v:"member",l:"Membre"}];
+
+  return (
+    <div>
+      <PageHeader label="Administration" title="Gestion des comptes"
+        action={<button style={btn("primary")} onClick={openAdd}>+ Créer un compte</button>}/>
+
+      <div style={{padding:".9rem 1.2rem",background:"rgba(240,165,0,.05)",borderRadius:8,border:"1px solid rgba(240,165,0,.15)",marginBottom:"1.5rem",fontSize:".82rem",color:"rgba(224,247,255,.55)"}}>
+        👑 Compte ROOT : <span style={{color:"#00ffc8"}}>root@grandnord.rp</span> · Mot de passe modifiable ci-dessous · Ne peut pas être supprimé.
+      </div>
+
+      <div style={card}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead>
+            <tr>{["Avatar","Pseudo","E-mail","Rôle","Statut","Créé le","Actions"].map(h=>(
+              <th key={h} style={{padding:".65rem .9rem",textAlign:"left",fontSize:".63rem",letterSpacing:".18em",textTransform:"uppercase",color:C.aurora1,borderBottom:"1px solid rgba(0,255,200,.12)",fontFamily:"'Cinzel',serif"}}>{h}</th>
+            ))}</tr>
+          </thead>
+          <tbody>
+            {accounts.map(a=>(
+              <tr key={a.id}>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:"1.5rem"}}>{a.avatar}</td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontFamily:"'Cinzel',serif",fontSize:".85rem",color:C.ice}}>
+                  {a.pseudo}{a.isRoot&&<span style={{...badge("#f0a500","rgba(240,165,0,.1)"),marginLeft:".5rem",fontSize:".58rem"}}>ROOT</span>}
+                </td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".8rem",color:"rgba(168,216,234,.5)"}}>{a.email}</td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}><RoleBadge role={a.role}/></td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}><span style={badge(a.active!==false?"#00ffc8":"#ff6b6b",a.active!==false?"rgba(0,255,200,.08)":"rgba(255,107,107,.08)")}>{a.active!==false?"Actif":"Inactif"}</span></td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:".75rem",color:"rgba(168,216,234,.3)"}}>{a.joinDate}</td>
+                <td style={{padding:".75rem .9rem",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                  <div style={{display:"flex",gap:".35rem",flexWrap:"wrap"}}>
+                    <button style={btn("ghost")} onClick={()=>openEdit(a)}>✏️ Éditer</button>
+                    {!a.isRoot&&<button style={btn(a.active!==false?"danger":"success")} onClick={()=>toggleActive(a.id)}>{a.active!==false?"⏸ Désactiver":"▶ Activer"}</button>}
+                    {!a.isRoot&&a.id!==user.id&&<button style={btn("danger")} onClick={()=>delAccount(a.id)}>🗑️</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modal==="add"&&(
+        <Modal title="➕ Créer un compte" onClose={()=>setModal(null)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Pseudo</label><input style={inp} value={f.pseudo} onChange={e=>sv("pseudo",e.target.value)} placeholder="NordAdmin"/></div>
+            <div><label style={lbl}>Avatar (emoji)</label><input style={inp} value={f.avatar} onChange={e=>sv("avatar",e.target.value)}/></div>
+          </div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>E-mail</label><input style={inp} type="email" value={f.email} onChange={e=>sv("email",e.target.value)} placeholder="admin@grandnord.rp"/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Mot de passe</label><input style={inp} type="password" value={f.password} onChange={e=>sv("password",e.target.value)} placeholder="6 caractères min."/></div>
+            <div><label style={lbl}>Rôle</label>
+              <select style={{...inp,appearance:"none"}} value={f.role} onChange={e=>sv("role",e.target.value)}>
+                {roleOptions.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end",marginTop:"1.5rem"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={saveAdd}>✅ Créer le compte</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal==="edit"&&(
+        <Modal title={`✏️ Modifier — ${f.pseudo}`} onClose={()=>setModal(null)}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Pseudo</label><input style={inp} value={f.pseudo} onChange={e=>sv("pseudo",e.target.value)} disabled={f.isRoot}/></div>
+            <div><label style={lbl}>Avatar (emoji)</label><input style={inp} value={f.avatar} onChange={e=>sv("avatar",e.target.value)}/></div>
+          </div>
+          <div style={{marginBottom:"1rem"}}><label style={lbl}>E-mail</label><input style={inp} type="email" value={f.email} onChange={e=>sv("email",e.target.value)} disabled={f.isRoot}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem",marginBottom:"1rem"}}>
+            <div><label style={lbl}>Nouveau mot de passe (laisser vide = inchangé)</label><input style={inp} type="password" value={editPwd} onChange={e=>setEditPwd(e.target.value)} placeholder="Nouveau mot de passe"/></div>
+            <div><label style={lbl}>Rôle</label>
+              <select style={{...inp,appearance:"none"}} value={f.role} onChange={e=>sv("role",e.target.value)} disabled={f.isRoot}>
+                {roleOptions.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:".8rem",justifyContent:"flex-end",marginTop:"1.5rem"}}>
+            <button style={btn("ghost")} onClick={()=>setModal(null)}>Annuler</button>
+            <button style={btn("primary")} onClick={saveEdit}>💾 Sauvegarder</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
 //  ROOT APP
 // ══════════════════════════════════════════
 function App() {
@@ -784,12 +949,28 @@ function App() {
   const [toast, setToast]     = useState({show:false,msg:""});
   const [loading, setLoading] = useState(true);
   const [mob, setMob]         = useState(false);
+  // Login form state
+  const [loginEmail, setLoginEmail]     = useState("");
+  const [loginPass,  setLoginPass]      = useState("");
+  const [loginError, setLoginError]     = useState("");
 
   useEffect(()=>{
+    // Charge les données
     store.get("gnrp-data").then(r=>{
       try { setData(r?JSON.parse(r.value):DEFAULT); } catch { setData(DEFAULT); }
-      setLoading(false);
     });
+    // Vérifie la session existante
+    const session = getSession();
+    if(session){
+      const accounts = getAccounts();
+      const freshUser = accounts.find(a=>a.id===session.id && a.active!==false);
+      if(freshUser && (freshUser.role==="owner"||freshUser.role==="admin"||freshUser.role==="modo")){
+        setUser(freshUser);
+      } else {
+        clearSession();
+      }
+    }
+    setLoading(false);
   },[]);
 
   const updData = useCallback((key,val)=>{
@@ -805,6 +986,22 @@ function App() {
     setTimeout(()=>setToast({show:false,msg:""}),3000);
   },[]);
 
+  const doAdminLogin = () => {
+    setLoginError("");
+    if(!loginEmail||!loginPass){setLoginError("Veuillez remplir tous les champs.");return;}
+    const accounts = getAccounts();
+    const found = accounts.find(a=>
+      (a.email.toLowerCase()===loginEmail.toLowerCase()||a.pseudo.toLowerCase()===loginEmail.toLowerCase())
+      && a.password===loginPass
+      && a.active!==false
+      && (a.role==="owner"||a.role==="admin"||a.role==="modo")
+    );
+    if(!found){setLoginError("Identifiants incorrects ou accès refusé.");return;}
+    saveSession(found);
+    setUser(found);
+    setSection("dashboard");
+  };
+
   if(loading) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.deep,flexDirection:"column",gap:"1rem"}}>
       <div style={{fontFamily:"'Cinzel',serif",fontSize:"1.2rem",color:C.aurora1,letterSpacing:".2em"}}>GRAND NORD RP</div>
@@ -813,38 +1010,35 @@ function App() {
     </div>
   );
 
-  // ── LOGIN ──
+  // ── LOGIN (vrai formulaire) ──
   if(!user) return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:`radial-gradient(ellipse at 30% 30%,rgba(0,255,200,.05),transparent 60%),${C.deep}`,padding:"1rem"}}>
-      <div style={{width:420,maxWidth:"100%",border:"1px solid rgba(0,255,200,.2)",borderRadius:16,background:"rgba(0,15,30,.88)",backdropFilter:"blur(20px)",padding:"2.5rem",boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}>
+      <div style={{width:420,maxWidth:"100%",border:"1px solid rgba(0,255,200,.2)",borderRadius:16,background:"rgba(0,15,30,.92)",backdropFilter:"blur(20px)",padding:"2.5rem",boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}>
         <div style={{fontFamily:"'Cinzel',serif",fontWeight:900,fontSize:"1.2rem",letterSpacing:".2em",color:C.aurora1,textShadow:`0 0 20px rgba(0,255,200,.35)`,marginBottom:"2rem",textAlign:"center"}}>GRAND NORD RP</div>
         <h2 style={{fontFamily:"'Cinzel',serif",fontSize:"1.4rem",textAlign:"center",marginBottom:".5rem",color:C.ice}}>Admin Panel</h2>
         <p style={{textAlign:"center",fontSize:".84rem",color:"rgba(168,216,234,.4)",marginBottom:"2rem"}}>Connexion réservée au staff du serveur</p>
 
-        <button style={{width:"100%",padding:"1rem",background:"linear-gradient(135deg,#5865F2,#7289da)",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:".85rem",letterSpacing:".15em",color:"white",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:".8rem",marginBottom:"1.5rem",boxShadow:"0 0 30px rgba(88,101,242,.25)"}}>
-          🎮 Connexion avec Discord OAuth
+        {loginError&&<div style={{padding:".75rem 1rem",background:"rgba(255,107,107,.1)",border:"1px solid rgba(255,107,107,.3)",borderRadius:6,color:"#ff6b6b",fontSize:".83rem",marginBottom:"1.2rem",textAlign:"center"}}>{loginError}</div>}
+
+        <div style={{marginBottom:"1rem"}}>
+          <label style={lbl}>E-mail ou pseudo</label>
+          <input style={inp} type="text" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)}
+            placeholder="root@grandnord.rp" autoComplete="username"
+            onKeyDown={e=>e.key==="Enter"&&doAdminLogin()}/>
+        </div>
+        <div style={{marginBottom:"1.5rem"}}>
+          <label style={lbl}>Mot de passe</label>
+          <input style={inp} type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)}
+            placeholder="••••••••" autoComplete="current-password"
+            onKeyDown={e=>e.key==="Enter"&&doAdminLogin()}/>
+        </div>
+        <button onClick={doAdminLogin} style={{width:"100%",padding:"1rem",background:"linear-gradient(135deg,#00ffc8,#00aaff)",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"'Cinzel',serif",fontSize:".85rem",letterSpacing:".15em",color:"#010810",fontWeight:700,boxShadow:"0 0 30px rgba(0,255,200,.25)",transition:"transform .2s,box-shadow .3s"}}>
+          Se connecter
         </button>
-
-        <div style={{display:"flex",alignItems:"center",gap:"1rem",margin:"1.2rem 0",fontSize:".7rem",letterSpacing:".15em",color:"rgba(168,216,234,.25)",textTransform:"uppercase"}}>
-          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>démo<div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
-        </div>
-
-        <div style={{display:"flex",flexDirection:"column",gap:".6rem"}}>
-          {DISCORD_USERS.map(u=>(
-            <button key={u.id} onClick={()=>{setUser(u);setSection("dashboard");}}
-              style={{width:"100%",padding:".85rem 1rem",background:"rgba(0,20,40,.6)",border:"1px solid rgba(0,255,200,.15)",borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",gap:".8rem",transition:"all .2s",textAlign:"left"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(0,255,200,.4)";e.currentTarget.style.background="rgba(0,255,200,.06)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,255,200,.15)";e.currentTarget.style.background="rgba(0,20,40,.6)";}}>
-              <span style={{fontSize:"1.5rem"}}>{u.avatar}</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:".88rem",color:C.ice,fontWeight:500}}>{u.pseudo}</div>
-                <div style={{fontSize:".72rem",color:"rgba(168,216,234,.35)",marginTop:".1rem"}}>Se connecter en tant que…</div>
-              </div>
-              <RoleBadge role={u.role}/>
-            </button>
-          ))}
-        </div>
-        <p style={{marginTop:"1.5rem",fontSize:".7rem",textAlign:"center",color:"rgba(168,216,234,.2)",lineHeight:1.7}}>En production, branchez votre Discord OAuth App.<br/>Seul le staff whitelisté aura accès.</p>
+        <p style={{marginTop:"1.5rem",fontSize:".7rem",textAlign:"center",color:"rgba(168,216,234,.2)",lineHeight:1.7}}>
+          Compte ROOT par défaut :<br/>
+          <span style={{color:"rgba(0,255,200,.4)"}}>root@grandnord.rp</span> / <span style={{color:"rgba(0,255,200,.4)"}}>GrandNord2025!</span>
+        </p>
       </div>
     </div>
   );
@@ -866,6 +1060,9 @@ function App() {
       ...(can(user.role,"candidatures")?[{id:"candidatures",icon:"📋",label:"Candidatures",badge:pending||null}]:[]),
       ...(can(user.role,"staff")||can(user.role,"all")?[{id:"staff",icon:"👥",label:"Staff"}]:[]),
     ]},
+    {section:"ADMINISTRATION", items:[
+      ...(can(user.role,"all")||can(user.role,"accounts")?[{id:"accounts",icon:"🔑",label:"Comptes"}]:[]),
+    ]},
   ].filter(g=>g.items.length>0);
 
   const allItems = NAV.flatMap(g=>g.items);
@@ -881,9 +1078,12 @@ function App() {
       case "changelog":    return <ChangelogManager data={data} onUpdate={updData} showToast={showToast}/>;
       case "candidatures": return <CandidaturesManager data={data} onUpdate={updData} showToast={showToast}/>;
       case "staff":        return <StaffManager data={data} onUpdate={updData} user={user} showToast={showToast}/>;
+      case "accounts":     return <AccountsManager user={user} showToast={showToast}/>;
       default:             return <Dashboard data={data} user={user}/>;
     }
   };
+
+  const doLogout = () => { clearSession(); setUser(null); setLoginEmail(""); setLoginPass(""); setLoginError(""); };
 
   const Sidebar = () => (
     <div style={{width:250,background:"rgba(0,8,20,.97)",borderRight:"1px solid rgba(0,255,200,.07)",display:"flex",flexDirection:"column",position:"fixed",top:0,bottom:0,left:mob?0:-250,zIndex:100,transition:"left .3s",overflowY:"auto"}}>
@@ -914,7 +1114,7 @@ function App() {
           <div style={{fontSize:".82rem",color:C.ice,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.pseudo.split("#")[0]}</div>
           <RoleBadge role={user.role}/>
         </div>
-        <button onClick={()=>setUser(null)} title="Déconnexion" style={{background:"transparent",border:"none",cursor:"pointer",color:"rgba(168,216,234,.25)",fontSize:"1rem",padding:".2rem",lineHeight:1}}
+        <button onClick={doLogout} title="Déconnexion" style={{background:"transparent",border:"none",cursor:"pointer",color:"rgba(168,216,234,.25)",fontSize:"1rem",padding:".2rem",lineHeight:1}}
           onMouseEnter={e=>e.currentTarget.style.color="#ff6b6b"} onMouseLeave={e=>e.currentTarget.style.color="rgba(168,216,234,.25)"}>↩</button>
       </div>
     </div>
