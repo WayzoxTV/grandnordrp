@@ -181,8 +181,37 @@
       <li><a href="candidature.html">Candidature</a></li>
       <li><a href="news.html">News</a></li>
       <li><a href="login.html" class="nav-discord">Espace membre</a></li>
+      <li id="nav-admin-link" style="display:none"><a href="admin.html" class="nav-admin">⚙ Admin</a></li>
     </ul>
   </nav>
+  <style>
+    .nav-admin {
+      color: #f0a500 !important;
+      border: 1px solid rgba(240,165,0,.35);
+      border-radius: 4px;
+      padding: .3rem .8rem !important;
+      font-family: 'Cinzel', serif;
+      font-size: .72rem !important;
+      letter-spacing: .15em;
+      transition: all .2s;
+    }
+    .nav-admin:hover {
+      background: rgba(240,165,0,.1);
+      border-color: rgba(240,165,0,.7);
+      color: #f0c040 !important;
+    }
+  </style>
+  <script>
+    // Affiche l'onglet Admin si l'utilisateur est connecté en tant qu'admin/owner
+    (function() {
+      try {
+        var session = JSON.parse(localStorage.getItem('gnrp-session') || 'null');
+        if (session && (session.role === 'admin' || session.role === 'owner')) {
+          document.getElementById('nav-admin-link').style.display = '';
+        }
+      } catch(e) {}
+    })();
+  </script>
 
   <!-- HERO -->
   <section id="hero">
