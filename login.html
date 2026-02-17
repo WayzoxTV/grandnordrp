@@ -255,8 +255,26 @@
       <li><a href="candidature.html">Candidature</a></li>
       <li><a href="news.html">News</a></li>
       <li><a href="login.html" class="nav-discord active">Espace membre</a></li>
+      <li id="nav-admin-link" style="display:none"><a href="admin.html" class="nav-admin">⚙ Admin</a></li>
     </ul>
   </nav>
+  <style>
+    .nav-admin {
+      color: #f0a500 !important;
+      border: 1px solid rgba(240,165,0,.35);
+      border-radius: 4px;
+      padding: .3rem .8rem !important;
+      font-family: 'Cinzel', serif;
+      font-size: .72rem !important;
+      letter-spacing: .15em;
+      transition: all .2s;
+    }
+    .nav-admin:hover {
+      background: rgba(240,165,0,.1);
+      border-color: rgba(240,165,0,.7);
+      color: #f0c040 !important;
+    }
+  </style>
 
   <div class="login-wrapper">
 
@@ -291,20 +309,18 @@
           <h2>Bon retour</h2>
           <p class="sub">Connecte-toi pour accéder à ton espace membre.</p>
 
-          <a href="#" class="btn-discord-oauth" onclick="fakeLogin(event)">
-            <span class="d-icon">🎮</span> Connexion avec Discord
-          </a>
+          <div class="or-divider">connexion</div>
 
-          <div class="or-divider">ou</div>
+          <div id="login-msg" style="display:none;padding:.75rem 1rem;border-radius:6px;border:1px solid;font-size:.83rem;margin-bottom:1rem;"></div>
 
-          <form onsubmit="fakeLogin(event)">
+          <form onsubmit="doLogin(event)">
             <div class="form-group">
-              <label>Adresse e-mail</label>
-              <input type="email" placeholder="ton@email.com">
+              <label>E-mail ou pseudo</label>
+              <input type="text" id="login-email" placeholder="ton@email.com ou TonPseudo" autocomplete="username">
             </div>
             <div class="form-group">
               <label>Mot de passe</label>
-              <input type="password" placeholder="••••••••">
+              <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
             </div>
             <a href="#" class="form-forgot">Mot de passe oublié ?</a>
             <button type="submit" class="btn-login">Se connecter</button>
@@ -319,26 +335,26 @@
         <!-- REGISTER PANEL -->
         <div class="login-panel" id="panel-register">
           <h2>Créer un compte</h2>
-          <p class="sub">Lier ton compte Discord pour une inscription rapide.</p>
+          <p class="sub">Rejoins la communauté Grand Nord RP.</p>
 
-          <a href="#" class="btn-discord-oauth" onclick="fakeLogin(event)">
-            <span class="d-icon">🎮</span> Créer via Discord
-          </a>
+          <div id="reg-msg" style="display:none;padding:.75rem 1rem;border-radius:6px;border:1px solid;font-size:.83rem;margin-bottom:1rem;"></div>
 
-          <div class="or-divider">ou manuellement</div>
-
-          <form onsubmit="fakeLogin(event)">
+          <form onsubmit="doRegister(event)">
             <div class="form-group">
-              <label>Pseudo Discord</label>
-              <input type="text" placeholder="TonPseudo#0000">
+              <label>Pseudo</label>
+              <input type="text" id="reg-pseudo" placeholder="TonPseudo" autocomplete="username">
             </div>
             <div class="form-group">
               <label>Adresse e-mail</label>
-              <input type="email" placeholder="ton@email.com">
+              <input type="email" id="reg-email" placeholder="ton@email.com" autocomplete="email">
             </div>
             <div class="form-group">
               <label>Mot de passe</label>
-              <input type="password" placeholder="8 caractères minimum">
+              <input type="password" id="reg-password" placeholder="8 caractères minimum" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label>Confirmer le mot de passe</label>
+              <input type="password" id="reg-confirm" placeholder="••••••••" autocomplete="new-password">
             </div>
             <button type="submit" class="btn-login" style="margin-top:.5rem;">Créer mon compte</button>
           </form>
@@ -353,27 +369,28 @@
     <!-- MEMBER PANEL (shown after login) -->
     <div class="member-panel" id="member-panel">
       <div class="member-header">
-        <div class="member-avatar">🐺</div>
+        <div class="member-avatar" id="mp-avatar">🐺</div>
         <div class="member-info">
-          <h2>Bienvenue, Viking_Nord</h2>
-          <p>Membre depuis le 10 Janvier 2025 · Serveur : Grand Nord RP</p>
-          <div class="member-badges">
-            <span class="member-badge badge-wl">✓ Whitelisté</span>
-            <span class="member-badge badge-police">Northern Police</span>
-            <span class="member-badge badge-vet">Vétéran</span>
-          </div>
+          <h2 id="mp-name">Bienvenue</h2>
+          <p id="mp-info">Membre · Serveur : Grand Nord RP</p>
+          <div class="member-badges" id="mp-badges"></div>
         </div>
         <button class="btn-logout" onclick="logout()">↩ Déconnexion</button>
       </div>
 
       <div class="member-stats">
-        <div class="member-stat"><div class="member-stat-val">142</div><div class="member-stat-lbl">Heures de jeu</div></div>
-        <div class="member-stat"><div class="member-stat-val">34</div><div class="member-stat-lbl">Sessions RP</div></div>
-        <div class="member-stat"><div class="member-stat-val">8 420</div><div class="member-stat-lbl">GNC en poche</div></div>
-        <div class="member-stat"><div class="member-stat-val">Cpl.</div><div class="member-stat-lbl">Grade NPD</div></div>
+        <div class="member-stat"><div class="member-stat-val">—</div><div class="member-stat-lbl">Heures de jeu</div></div>
+        <div class="member-stat"><div class="member-stat-val">—</div><div class="member-stat-lbl">Sessions RP</div></div>
+        <div class="member-stat"><div class="member-stat-val">—</div><div class="member-stat-lbl">GNC en poche</div></div>
+        <div class="member-stat"><div class="member-stat-val">—</div><div class="member-stat-lbl">Grade actuel</div></div>
       </div>
 
       <div class="member-actions">
+        <div class="action-card" id="action-admin" style="display:none" onclick="window.location.href='admin.html'" style="border-color:rgba(240,165,0,.3);cursor:pointer;">
+          <div class="action-icon">⚙️</div>
+          <div class="action-title" style="color:#f0a500;">Panneau Admin</div>
+          <div class="action-desc">Accédez au panel de gestion du serveur.</div>
+        </div>
         <div class="action-card">
           <div class="action-icon">👤</div>
           <div class="action-title">Mon personnage</div>
@@ -400,7 +417,7 @@
           <div class="action-desc">Aucune nouvelle notification pour le moment.</div>
         </div>
         <div class="action-card">
-          <div class="action-icon">⚙️</div>
+          <div class="action-icon">🔑</div>
           <div class="action-title">Paramètres</div>
           <div class="action-desc">Modifie tes préférences et informations de compte.</div>
         </div>
@@ -422,6 +439,177 @@
 
   <script src="shared.js"></script>
   <script>
+    // ═══════════════════════════════════════════════
+    //  SYSTÈME D'AUTHENTIFICATION GRAND NORD RP
+    // ═══════════════════════════════════════════════
+
+    // Compte ROOT par défaut (créé si aucun compte n'existe)
+    const ROOT_ACCOUNT = {
+      id: 'root-001',
+      pseudo: 'RootAdmin',
+      email: 'root@grandnord.rp',
+      password: 'GrandNord2025!',
+      role: 'owner',
+      avatar: '👑',
+      joinDate: new Date().toISOString().split('T')[0],
+      active: true,
+      isRoot: true
+    };
+
+    // ─── Helpers stockage ───
+    function getAccounts() {
+      try {
+        const data = JSON.parse(localStorage.getItem('gnrp-accounts') || 'null');
+        if (!data || data.length === 0) {
+          // Initialise avec le compte ROOT
+          const accounts = [ROOT_ACCOUNT];
+          localStorage.setItem('gnrp-accounts', JSON.stringify(accounts));
+          return accounts;
+        }
+        return data;
+      } catch(e) {
+        return [ROOT_ACCOUNT];
+      }
+    }
+
+    function saveAccounts(accounts) {
+      localStorage.setItem('gnrp-accounts', JSON.stringify(accounts));
+    }
+
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem('gnrp-session') || 'null'); } catch(e) { return null; }
+    }
+
+    function saveSession(user) {
+      localStorage.setItem('gnrp-session', JSON.stringify(user));
+    }
+
+    function clearSession() {
+      localStorage.removeItem('gnrp-session');
+    }
+
+    // ─── Affichage erreur/succès ───
+    function showMsg(el, msg, isError) {
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.style.background = isError ? 'rgba(255,107,107,.1)' : 'rgba(0,255,200,.1)';
+      el.style.borderColor = isError ? 'rgba(255,107,107,.3)' : 'rgba(0,255,200,.3)';
+      el.style.color = isError ? '#ff6b6b' : '#00ffc8';
+    }
+
+    // ─── Connexion ───
+    function doLogin(e) {
+      e.preventDefault();
+      const email    = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const msgEl    = document.getElementById('login-msg');
+
+      if (!email || !password) {
+        showMsg(msgEl, 'Veuillez remplir tous les champs.', true);
+        return;
+      }
+
+      const accounts = getAccounts();
+      const user = accounts.find(a =>
+        (a.email.toLowerCase() === email.toLowerCase() || a.pseudo.toLowerCase() === email.toLowerCase())
+        && a.password === password
+        && a.active !== false
+      );
+
+      if (!user) {
+        showMsg(msgEl, 'Identifiants incorrects ou compte désactivé.', true);
+        return;
+      }
+
+      saveSession(user);
+      showMemberPanel(user);
+    }
+
+    // ─── Inscription ───
+    function doRegister(e) {
+      e.preventDefault();
+      const pseudo   = document.getElementById('reg-pseudo').value.trim();
+      const email    = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const confirm  = document.getElementById('reg-confirm').value;
+      const msgEl    = document.getElementById('reg-msg');
+
+      if (!pseudo || !email || !password || !confirm) {
+        showMsg(msgEl, 'Tous les champs sont obligatoires.', true); return;
+      }
+      if (password.length < 8) {
+        showMsg(msgEl, 'Le mot de passe doit contenir au moins 8 caractères.', true); return;
+      }
+      if (password !== confirm) {
+        showMsg(msgEl, 'Les mots de passe ne correspondent pas.', true); return;
+      }
+
+      const accounts = getAccounts();
+      if (accounts.find(a => a.email.toLowerCase() === email.toLowerCase())) {
+        showMsg(msgEl, 'Cet e-mail est déjà utilisé.', true); return;
+      }
+      if (accounts.find(a => a.pseudo.toLowerCase() === pseudo.toLowerCase())) {
+        showMsg(msgEl, 'Ce pseudo est déjà pris.', true); return;
+      }
+
+      const newUser = {
+        id: 'user-' + Date.now(),
+        pseudo, email, password,
+        role: 'member',
+        avatar: '🐺',
+        joinDate: new Date().toISOString().split('T')[0],
+        active: true,
+        isRoot: false
+      };
+      accounts.push(newUser);
+      saveAccounts(accounts);
+      saveSession(newUser);
+      showMemberPanel(newUser);
+    }
+
+    // ─── Afficher le panel membre ───
+    function showMemberPanel(user) {
+      document.getElementById('auth-container').style.display = 'none';
+      const panel = document.getElementById('member-panel');
+      panel.classList.add('show');
+
+      // Remplir les infos
+      document.getElementById('mp-avatar').textContent  = user.avatar || '🐺';
+      document.getElementById('mp-name').textContent    = 'Bienvenue, ' + user.pseudo;
+      document.getElementById('mp-info').textContent    = 'Membre depuis le ' + user.joinDate + ' · Serveur : Grand Nord RP';
+
+      // Badges
+      const badgesEl = document.getElementById('mp-badges');
+      badgesEl.innerHTML = '';
+      const roleBadge = document.createElement('span');
+      roleBadge.className = 'member-badge ' + (user.role === 'owner' ? 'badge-vet' : user.role === 'admin' ? 'badge-police' : 'badge-wl');
+      roleBadge.textContent = user.role === 'owner' ? '👑 Owner' : user.role === 'admin' ? '⚡ Admin' : user.role === 'modo' ? '🛡️ Modérateur' : '✓ Membre';
+      badgesEl.appendChild(roleBadge);
+
+      // Afficher ou masquer lien admin dans la nav
+      const adminLink = document.getElementById('nav-admin-link');
+      if (adminLink && (user.role === 'owner' || user.role === 'admin')) {
+        adminLink.style.display = '';
+      }
+
+      // Afficher bouton Admin dans les actions si owner/admin
+      const adminAction = document.getElementById('action-admin');
+      if (adminAction) {
+        adminAction.style.display = (user.role === 'owner' || user.role === 'admin') ? '' : 'none';
+      }
+    }
+
+    // ─── Déconnexion ───
+    function logout() {
+      clearSession();
+      document.getElementById('auth-container').style.display = 'grid';
+      document.getElementById('member-panel').classList.remove('show');
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+      document.getElementById('nav-admin-link').style.display = 'none';
+    }
+
+    // ─── Tabs ───
     function switchTab(tab) {
       document.querySelectorAll('.login-tab').forEach((t,i) => {
         t.classList.toggle('active', (tab==='login' && i===0)||(tab==='register' && i===1));
@@ -430,16 +618,33 @@
       document.getElementById('panel-register').classList.toggle('active', tab==='register');
     }
 
-    function fakeLogin(e) {
-      e.preventDefault();
-      document.getElementById('auth-container').style.display='none';
-      document.getElementById('member-panel').classList.add('show');
-    }
+    // ─── Init ───
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialise les comptes si nécessaire
+      getAccounts();
 
-    function logout() {
-      document.getElementById('auth-container').style.display='grid';
-      document.getElementById('member-panel').classList.remove('show');
-    }
+      // Vérifie si une session existe
+      const session = getSession();
+      if (session) {
+        // Vérifie que le compte existe toujours et est actif
+        const accounts = getAccounts();
+        const freshUser = accounts.find(a => a.id === session.id && a.active !== false);
+        if (freshUser) {
+          showMemberPanel(freshUser);
+          return;
+        } else {
+          clearSession();
+        }
+      }
+
+      // Affiche le nav admin si session active
+      try {
+        const s = JSON.parse(localStorage.getItem('gnrp-session') || 'null');
+        if (s && (s.role === 'admin' || s.role === 'owner')) {
+          document.getElementById('nav-admin-link').style.display = '';
+        }
+      } catch(e) {}
+    });
   </script>
 </body>
 </html>
